@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editor de enlaces (PWA)</title>
+  <title>Editor de enlaces</title>
 
   <style>
     body { font-family: Arial; padding: 15px; background:#f5f5f5; }
@@ -11,11 +11,12 @@
     button { width:100%; padding:10px; margin-top:8px; }
     .box { background:#fff; padding:10px; margin-top:10px; border-radius:8px; }
     label { font-size:12px; color:#555; }
+    .readonly { font-weight:bold; margin:6px 0; }
   </style>
 </head>
 <body>
 
-<h2>📱 Editor de enlaces</h2>
+<h2>📱 Vending Ozturk</h2>
 
 <div id="form"></div>
 
@@ -61,16 +62,42 @@ function render(){
     </div>
 
     <div class='box'>
-      <h3>👤 Usuario</h3>
+      <h3>👤 Datos del usuario</h3>
+
+      <label>🆔 ID de cliente (interno)</label>
       <input id='clientId' value='${datos.clientId||""}' />
+
+      <label>📧 Email de contacto</label>
       <input id='userEmail' value='${datos.userEmail||""}' />
     </div>
 
     <div class='box'>
-      <h3>📦 Pedido</h3>
-      <input id='numeroPedido' value='${datos.numeroPedido||merchant.Ds_Order||""}' />
+      <h3>📦 Pedido (auto generado)</h3>
+      <div class='readonly' id='pedidoView'>Se generará automáticamente</div>
     </div>
   `;
+}
+
+// 🕒 FECHA/HORA DISPOSITIVO
+function getCurrentDateTime(){
+  const now = new Date();
+
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+
+  const hh = String(now.getHours()).padStart(2,'0');
+  const min = String(now.getMinutes()).padStart(2,'0');
+
+  return {
+    date: `${dd}/${mm}/${yyyy}`,
+    hour: `${hh}:${min}`
+  };
+}
+
+// 🎲 RANDOM 4 DIGITOS
+function random4(){
+  return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
 function generate(){
@@ -78,7 +105,18 @@ function generate(){
   datos.seleccion = document.getElementById('seleccion').value;
   datos.clientId = document.getElementById('clientId').value;
   datos.userEmail = document.getElementById('userEmail').value;
-  merchant.Ds_Order = document.getElementById('numeroPedido').value;
+
+  let baseOrder = merchant.Ds_Order || "FER0000000000";
+
+  const clean = baseOrder.toString().slice(0, -4);
+  const newOrder = clean + random4();
+  merchant.Ds_Order = newOrder;
+
+  document.getElementById('pedidoView').innerText = newOrder;
+
+  const dt = getCurrentDateTime();
+  merchant.Ds_Date = dt.date;
+  merchant.Ds_Hour = dt.hour;
 
   const url = baseUrl
     + "?datos=" + b64encode(datos)
