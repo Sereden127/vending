@@ -87,7 +87,7 @@
 <div id="form"></div>
 
 <button class="btn-primary" onclick="generate()">Generar enlace</button>
-<button class="btn-secondary" onclick="copyLink()">📋 Copiar enlace</button>
+<button class="btn-secondary" onclick="copyLink()">🚀 Ir al enlace</button>
 
 <textarea id="output" readonly></textarea>
 
@@ -121,7 +121,7 @@ function render(){
   document.getElementById('form').innerHTML = `
     <div class='box'>
       <h3>🛒 Máquina / Selección</h3>
-      <input id='seleccion' placeholder='Ej: 777 o 1003' value='${datos.seleccion || ""}' />
+      <input id='seleccion' type='text' inputmode='numeric' pattern='[0-9]*' placeholder='Ej: 777 o 1017' value='${datos.seleccion || ""}' />
       <div class='readonly'>Se detecta automáticamente tipo de zona</div>
       <div id='zonaBadge'></div>
     </div>
@@ -141,9 +141,16 @@ function render(){
 
 function detectZona(seleccion){
   if(!seleccion) return "";
+  if(seleccion.toString() === "1017") return "CAFÉ";
   if(seleccion.toString().length === 3) return "SNACK";
   if(seleccion.toString().length === 4) return "CAFÉ";
   return "SNACK";
+}
+
+function detectProductName(seleccion, zona){
+  if(seleccion.toString() === "1017") return "TE AL LIMON";
+  if(zona === "CAFÉ") return "CAFÉ CON LECHE CAP";
+  return zona + " " + seleccion;
 }
 
 function random4(){
@@ -168,15 +175,15 @@ function generate(){
   datos.clientId = clientId;
   datos.userEmail = userEmail;
 
-  // 🧠 ZONA AUTOMÁTICA
-  datos.zona = detectZona(seleccion);
+  const zona = detectZona(seleccion);
+  datos.zona = zona;
 
-  // badge visual
+  // 🍹 PRODUCT NAME LOGIC
+  datos.productName = detectProductName(seleccion, zona);
+
   const badge = document.getElementById('zonaBadge');
-  if(datos.zona === "SNACK") badge.innerHTML = "<div class='badge snack'>SNACK</div>";
-  if(datos.zona === "CAFÉ") badge.innerHTML = "<div class='badge cafe'>CAFÉ</div>";
-
-  datos.productName = datos.zona + " " + seleccion;
+  if(zona === "SNACK") badge.innerHTML = "<div class='badge snack'>SNACK</div>";
+  if(zona === "CAFÉ") badge.innerHTML = "<div class='badge cafe'>CAFÉ</div>";
 
   let baseOrder = merchant.Ds_Order || "FER0000000000";
 
@@ -199,9 +206,10 @@ function generate(){
   document.getElementById('output').value = url;
 }
 
-function copyLink(){
-  navigator.clipboard.writeText(document.getElementById('output').value);
-  alert("Copiado");
+function goToLink(){
+  const url = document.getElementById('output').value;
+  if(!url) return alert('Primero genera el enlace');
+  window.location.href = url;
 }
 
 window.onload = decode;
