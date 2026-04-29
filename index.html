@@ -3,15 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editor de enlaces</title>
+  <title>Vending Ozturk</title>
 
   <style>
-    body { font-family: Arial; padding: 15px; background:#f5f5f5; }
-    input { width:100%; padding:8px; margin:6px 0; }
-    button { width:100%; padding:10px; margin-top:8px; }
-    .box { background:#fff; padding:10px; margin-top:10px; border-radius:8px; }
-    label { font-size:12px; color:#555; }
-    .readonly { font-weight:bold; margin:6px 0; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 16px;
+      background: #eef0f4;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .box {
+      background: white;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #2d6cdf;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #444;
+      color: white;
+    }
+
+    .readonly {
+      font-weight: bold;
+      margin-top: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+      padding: 10px;
+    }
   </style>
 </head>
 <body>
@@ -20,20 +73,18 @@
 
 <div id="form"></div>
 
-<button onclick="generate()">Generar enlace</button>
-<button onclick="copyLink()">📋 Copiar enlace</button>
+<button class="btn-primary" onclick="generate()">Generar enlace</button>
+<button class="btn-secondary" onclick="copyLink()">📋 Copiar enlace</button>
 
-<textarea id="output" readonly style="width:100%;margin-top:10px;"></textarea>
+<textarea id="output" readonly></textarea>
 
 <script>
 
-// 🔥 ENLACE BASE FIJO
-const fixedUrl = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSODEwNDcwNjUxIiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiI3NzciLCJtYWNoaW5lSWQiOiIxODk4MiIsInRpcG8iOiJzZWxlY2Npb24iLCJ6b25hIjoiY2FmZWNhcCIsInVzZXJFbWFpbCI6IiIsInN1Z2FyTGV2ZWwiOiIxIiwiY2xpZW50SWQiOiJQaWNhMjRoIiwicHJvZHVjdE5hbWUiOiJTRUxFQ0NJTyA3NzcifQ==&Ds_Signature=PFkbR12TKG9pn_ZUA4gfm68qlUueINknfG8f_SZRGPY=&Ds_SignatureVersion=HMAC_SHA256_V1";
+const baseUrl = "https://fersomaticweb.onrender.com/pago-ok-seleccion";
 
 let datos = {};
 let merchant = {};
 let signature = "";
-let baseUrl = "https://fersomaticweb.onrender.com/pago-ok-seleccion";
 
 function b64decode(str){
   try { return JSON.parse(atob(str)); } catch(e){ return {}; }
@@ -44,6 +95,7 @@ function b64encode(obj){
 }
 
 function decode(){
+  const fixedUrl = window.location.href;
   const u = new URL(fixedUrl);
 
   datos = b64decode(u.searchParams.get("datos"));
@@ -56,55 +108,48 @@ function decode(){
 function render(){
   document.getElementById('form').innerHTML = `
     <div class='box'>
-      <h3>🛒 Producto</h3>
-      <input id='productName' value='${datos.productName||""}' />
-      <input id='seleccion' value='${datos.seleccion||""}' />
+      <h3>🛒 Máquina / Selección</h3>
+      <input id='seleccion' placeholder='Ej: 777' value='${datos.seleccion || ""}' />
+      <div class='readonly'>Nombre automático: SELECCION [número]</div>
     </div>
 
     <div class='box'>
-      <h3>👤 Datos del usuario</h3>
-
-      <label>🆔 ID de cliente (interno)</label>
-      <input id='clientId' value='${datos.clientId||""}' />
-
-      <label>📧 Email de contacto</label>
-      <input id='userEmail' value='${datos.userEmail||""}' />
+      <h3>👤 Usuario</h3>
+      <input id='clientId' placeholder='ID de usuario (vacío si no aplica)' value='${datos.clientId || ""}' />
+      <input id='userEmail' placeholder='Email (opcional)' value='${datos.userEmail || ""}' />
     </div>
 
     <div class='box'>
-      <h3>📦 Pedido (auto generado)</h3>
+      <h3>📦 Pedido</h3>
       <div class='readonly' id='pedidoView'>Se generará automáticamente</div>
     </div>
   `;
 }
 
-// 🕒 FECHA/HORA DISPOSITIVO
 function getCurrentDateTime(){
   const now = new Date();
-
-  const dd = String(now.getDate()).padStart(2,'0');
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const yyyy = now.getFullYear();
-
-  const hh = String(now.getHours()).padStart(2,'0');
-  const min = String(now.getMinutes()).padStart(2,'0');
-
   return {
-    date: `${dd}/${mm}/${yyyy}`,
-    hour: `${hh}:${min}`
+    date: now.toLocaleDateString('es-ES'),
+    hour: now.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})
   };
 }
 
-// 🎲 RANDOM 4 DIGITOS
 function random4(){
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
 function generate(){
-  datos.productName = document.getElementById('productName').value;
-  datos.seleccion = document.getElementById('seleccion').value;
-  datos.clientId = document.getElementById('clientId').value;
-  datos.userEmail = document.getElementById('userEmail').value;
+
+  const seleccion = document.getElementById('seleccion').value;
+  const clientId = document.getElementById('clientId').value;
+  const userEmail = document.getElementById('userEmail').value;
+
+  datos.seleccion = seleccion;
+  datos.clientId = clientId;
+  datos.userEmail = userEmail;
+
+  // 🧠 nombre automático SIN edición manual
+  datos.productName = "SELECCION " + seleccion;
 
   let baseOrder = merchant.Ds_Order || "FER0000000000";
 
