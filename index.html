@@ -6,67 +6,51 @@
   <title>Vending Ozturk</title>
 
   <style>
-    body {
+    body{
       font-family: Arial, sans-serif;
-      padding: 16px;
-      background: #eef0f4;
+      padding:16px;
+      background:#eef0f4;
     }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 15px;
+    h2{
+      text-align:center;
+      margin-bottom:15px;
     }
 
-    .box {
-      background: white;
-      padding: 12px;
-      margin-bottom: 12px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    .box{
+      background:white;
+      padding:12px;
+      margin-bottom:12px;
+      border-radius:12px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
     }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 14px;
+    input{
+      width:100%;
+      padding:10px;
+      margin-top:6px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      font-size:14px;
     }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      cursor: pointer;
+    button{
+      width:100%;
+      padding:14px;
+      margin-top:10px;
+      border:none;
+      border-radius:12px;
+      font-size:16px;
+      cursor:pointer;
+      font-weight:bold;
     }
 
-    .btn-primary {
-      background: #2d6cdf;
-      color: white;
+    .btn-green{
+      background:#1db954;
+      color:white;
     }
 
-    .btn-secondary {
-      background: #444;
-      color: white;
-    }
-
-    .readonly {
-      font-weight: bold;
-      margin-top: 6px;
-    }
-
-    textarea {
-      width: 100%;
-      margin-top: 10px;
-      border-radius: 10px;
-      padding: 10px;
-    }
-
-    .badge {
+    .badge{
       display:inline-block;
       margin-top:8px;
       padding:4px 10px;
@@ -76,20 +60,28 @@
       background:#ddd;
     }
 
-    .snack { background:#ffd166; }
-    .cafe { background:#8ecae6; }
+    .snack{background:#ffd166;}
+    .cafe{background:#8ecae6;}
+
   </style>
 </head>
 <body>
 
 <h2>📱 Vending Ozturk</h2>
 
-<div id="form"></div>
+<div class="box">
+  <h3>🛒 Máquina / Selección</h3>
+  <input id="seleccion" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ej: 777 o 1003" />
+  <div id="zonaBadge"></div>
+</div>
 
-<button class="btn-primary" onclick="generate()">Generar enlace</button>
-<button class="btn-secondary" onclick="copyLink()">🚀 Ir al enlace</button>
+<div class="box">
+  <h3>👤 Usuario</h3>
+  <input id="clientId" placeholder="ID usuario" />
+  <input id="userEmail" placeholder="Email" />
+</div>
 
-<textarea id="output" readonly></textarea>
+<button class="btn-green" onclick="generateAndGo()">PEDIR</button>
 
 <script>
 
@@ -99,73 +91,28 @@ let datos = {};
 let merchant = {};
 let signature = "";
 
-function b64decode(str){
-  try { return JSON.parse(atob(str)); } catch(e){ return {}; }
-}
-
 function b64encode(obj){
   return btoa(JSON.stringify(obj));
 }
 
-function decode(){
-  const u = new URL(window.location.href);
-
-  datos = b64decode(u.searchParams.get("datos"));
-  merchant = b64decode(u.searchParams.get("Ds_MerchantParameters"));
-  signature = u.searchParams.get("Ds_Signature");
-
-  render();
-}
-
-function render(){
-  document.getElementById('form').innerHTML = `
-    <div class='box'>
-      <h3>🛒 Máquina / Selección</h3>
-      <input id='seleccion' type='text' inputmode='numeric' pattern='[0-9]*' placeholder='Ej: 777 o 1017' value='${datos.seleccion || ""}' />
-      <div class='readonly'>Se detecta automáticamente tipo de zona</div>
-      <div id='zonaBadge'></div>
-    </div>
-
-    <div class='box'>
-      <h3>👤 Usuario</h3>
-      <input id='clientId' placeholder='ID usuario' value='${datos.clientId || ""}' />
-      <input id='userEmail' placeholder='Email' value='${datos.userEmail || ""}' />
-    </div>
-
-    <div class='box'>
-      <h3>📦 Pedido</h3>
-      <div class='readonly' id='pedidoView'>Se generará automáticamente</div>
-    </div>
-  `;
-}
-
-function detectZona(seleccion){
-  if(!seleccion) return "";
-  if(seleccion.toString() === "1017") return "CAFÉ";
-  if(seleccion.toString().length === 3) return "SNACK";
-  if(seleccion.toString().length === 4) return "CAFÉ";
-  return "SNACK";
-}
-
-function detectProductName(seleccion, zona){
-  if(seleccion.toString() === "1017") return "TE AL LIMON";
-  if(zona === "CAFÉ") return "CAFÉ CON LECHE CAP";
-  return zona + " " + seleccion;
+function detectZona(sel){
+  if(!sel) return "";
+  return sel.toString().length === 4 ? "CAFÉ" : "SNACK";
 }
 
 function random4(){
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  return Math.floor(1000 + Math.random()*9000);
 }
 
-function getCurrentDateTime(){
-  const now = new Date();
+function getDate(){
+  const d = new Date();
   return {
-    date: now.toLocaleDateString('es-ES'),
-    hour: now.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})
+    date: d.toLocaleDateString('es-ES'),
+    hour: d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})
   };
 }
 
-function generate(){
+function generateAndGo(){
 
   const seleccion = document.getElementById('seleccion').value;
   const clientId = document.getElementById('clientId').value;
@@ -177,23 +124,17 @@ function generate(){
 
   const zona = detectZona(seleccion);
   datos.zona = zona;
+  datos.productName = zona + " " + seleccion;
 
-  // 🍹 PRODUCT NAME LOGIC
-  datos.productName = detectProductName(seleccion, zona);
-
-  const badge = document.getElementById('zonaBadge');
-  if(zona === "SNACK") badge.innerHTML = "<div class='badge snack'>SNACK</div>";
-  if(zona === "CAFÉ") badge.innerHTML = "<div class='badge cafe'>CAFÉ</div>";
+  document.getElementById('zonaBadge').innerHTML =
+    zona === "CAFÉ"
+      ? "<div class='badge cafe'>CAFÉ</div>"
+      : "<div class='badge snack'>SNACK</div>";
 
   let baseOrder = merchant.Ds_Order || "FER0000000000";
+  merchant.Ds_Order = baseOrder.toString().slice(0,-4) + random4();
 
-  const clean = baseOrder.toString().slice(0, -4);
-  const newOrder = clean + random4();
-  merchant.Ds_Order = newOrder;
-
-  document.getElementById('pedidoView').innerText = newOrder;
-
-  const dt = getCurrentDateTime();
+  const dt = getDate();
   merchant.Ds_Date = dt.date;
   merchant.Ds_Hour = dt.hour;
 
@@ -203,16 +144,8 @@ function generate(){
     + "&Ds_Signature=" + signature
     + "&Ds_SignatureVersion=HMAC_SHA256_V1";
 
-  document.getElementById('output').value = url;
-}
-
-function goToLink(){
-  const url = document.getElementById('output').value;
-  if(!url) return alert('Primero genera el enlace');
   window.location.href = url;
 }
-
-window.onload = decode;
 
 </script>
 
