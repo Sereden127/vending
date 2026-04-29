@@ -65,6 +65,19 @@
       border-radius: 10px;
       padding: 10px;
     }
+
+    .badge {
+      display:inline-block;
+      margin-top:8px;
+      padding:4px 10px;
+      border-radius:20px;
+      font-size:12px;
+      font-weight:bold;
+      background:#ddd;
+    }
+
+    .snack { background:#ffd166; }
+    .cafe { background:#8ecae6; }
   </style>
 </head>
 <body>
@@ -95,8 +108,7 @@ function b64encode(obj){
 }
 
 function decode(){
-  const fixedUrl = window.location.href;
-  const u = new URL(fixedUrl);
+  const u = new URL(window.location.href);
 
   datos = b64decode(u.searchParams.get("datos"));
   merchant = b64decode(u.searchParams.get("Ds_MerchantParameters"));
@@ -109,14 +121,15 @@ function render(){
   document.getElementById('form').innerHTML = `
     <div class='box'>
       <h3>🛒 Máquina / Selección</h3>
-      <input id='seleccion' placeholder='Ej: 777' value='${datos.seleccion || ""}' />
-      
+      <input id='seleccion' placeholder='Ej: 777 o 1003' value='${datos.seleccion || ""}' />
+      <div class='readonly'>Se detecta automáticamente tipo de zona</div>
+      <div id='zonaBadge'></div>
     </div>
 
     <div class='box'>
       <h3>👤 Usuario</h3>
-      <input id='clientId' placeholder='ID de usuario (vacío si no aplica)' value='${datos.clientId || ""}' />
-      <input id='userEmail' placeholder='Email (opcional)' value='${datos.userEmail || ""}' />
+      <input id='clientId' placeholder='ID usuario' value='${datos.clientId || ""}' />
+      <input id='userEmail' placeholder='Email' value='${datos.userEmail || ""}' />
     </div>
 
     <div class='box'>
@@ -126,16 +139,23 @@ function render(){
   `;
 }
 
-function getCurrentDateTime(){
-  const now = new Date();
-  return {
-    date: now.toLocaleDateString('es-ES'),
-    hour: now.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})
-  };
+function detectZona(seleccion){
+  if(!seleccion) return "";
+  if(seleccion.toString().length === 3) return "SNACK";
+  if(seleccion.toString().length === 4) return "CAFÉ";
+  return "SNACK";
 }
 
 function random4(){
   return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+function getCurrentDateTime(){
+  const now = new Date();
+  return {
+    date: now.toLocaleDateString('es-ES'),
+    hour: now.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})
+  };
 }
 
 function generate(){
@@ -148,8 +168,15 @@ function generate(){
   datos.clientId = clientId;
   datos.userEmail = userEmail;
 
-  // 🧠 nombre automático SIN edición manual
-  datos.productName = "SELECCION " + seleccion;
+  // 🧠 ZONA AUTOMÁTICA
+  datos.zona = detectZona(seleccion);
+
+  // badge visual
+  const badge = document.getElementById('zonaBadge');
+  if(datos.zona === "SNACK") badge.innerHTML = "<div class='badge snack'>SNACK</div>";
+  if(datos.zona === "CAFÉ") badge.innerHTML = "<div class='badge cafe'>CAFÉ</div>";
+
+  datos.productName = datos.zona + " " + seleccion;
 
   let baseOrder = merchant.Ds_Order || "FER0000000000";
 
