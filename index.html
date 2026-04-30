@@ -61,6 +61,8 @@
   <input id="seleccion" type="text" inputmode="numeric" placeholder="Ej: 777 o 1003" />
 </div><div class="box">
   <input id="userEmail" placeholder="Email" />
+</div><div class="box" id="sugarBox" style="display:none;">
+  <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
 </div><button onclick="go()">PEDIR</button>
 
 </div><script>
@@ -73,6 +75,19 @@ const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJ
 
 function decode(b64){return JSON.parse(atob(b64));}
 function encode(obj){return btoa(JSON.stringify(obj));}
+
+// Mostrar/ocultar azúcar solo para café (4 dígitos)
+const selInput = document.getElementById('seleccion');
+const sugarBox = document.getElementById('sugarBox');
+
+selInput.addEventListener('input', () => {
+  const v = selInput.value;
+  if(v.length === 4){
+    sugarBox.style.display = 'block';
+  } else {
+    sugarBox.style.display = 'none';
+  }
+});
 
 function go(){
   const sel = document.getElementById('seleccion').value;
