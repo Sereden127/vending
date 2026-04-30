@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vending Ozturk</title>
-
-  <style>
+  <title>Vending Ozturk</title>  <style>
     :root{
       --bg:#0f1115;
       --card:#171a21;
@@ -95,31 +92,21 @@
     .snack{background:var(--snack); color:#000;}
     .cafe{background:var(--cafe); color:#000;}
 
-  </style>
-</head>
-<body>
-
-<div class="container">
-
-<h2>📱 Vending Ozturk</h2>
-
-<div class="box">
+  </style></head>
+<body><div class="container"><h2>📱 Vending Ozturk</h2><div class="box">
   <h3>🛒 Máquina / Selección</h3>
   <input id="seleccion" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ej: 777 o 1003" />
   <div id="zonaBadge"></div>
-</div>
-
-<div class="box">
+</div><div class="box">
   <h3>👤 Usuario</h3>
   <input id="clientId" placeholder="ID usuario" />
   <input id="userEmail" placeholder="Email" />
-</div>
+</div><div class="box" id="sugarBox" style="display:none;">
+  <h3>🍬 Nivel de azúcar</h3>
+  <input id="sugarLevel" type="number" min="0" max="3" placeholder="0 a 3" />
+</div><button class="btn-green" onclick="generateAndGo()">PEDIR</button>
 
-<button class="btn-green" onclick="generateAndGo()">PEDIR</button>
-
-</div>
-
-<script>
+</div><script>
 
 const baseUrl = "https://fersomaticweb.onrender.com/pago-ok-seleccion";
 
@@ -140,19 +127,26 @@ function random4(){
   return Math.floor(1000 + Math.random()*9000);
 }
 
-function getDate(){
-  const d = new Date();
-  return {
-    date: d.toLocaleDateString('es-ES'),
-    hour: d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})
-  };
-}
+// Mostrar / ocultar azúcar dinámicamente
+const seleccionInput = document.getElementById('seleccion');
+const sugarBox = document.getElementById('sugarBox');
+
+seleccionInput.addEventListener('input', () => {
+  const val = seleccionInput.value;
+
+  if(val.length === 4){
+    sugarBox.style.display = "block";
+  } else {
+    sugarBox.style.display = "none";
+  }
+});
 
 function generateAndGo(){
 
   const seleccion = document.getElementById('seleccion').value;
   const clientId = document.getElementById('clientId').value;
   const userEmail = document.getElementById('userEmail').value;
+  const sugarLevel = document.getElementById('sugarLevel').value;
 
   datos.seleccion = seleccion;
   datos.clientId = clientId;
@@ -162,6 +156,17 @@ function generateAndGo(){
   datos.zona = zona;
   datos.productName = zona + " " + seleccion;
 
+  // Azúcar solo para café
+  if(seleccion.length === 4){
+    if(sugarLevel < 0 || sugarLevel > 3){
+      alert("Azúcar debe ser entre 0 y 3");
+      return;
+    }
+    datos.sugarLevel = sugarLevel || "0";
+  } else {
+    delete datos.sugarLevel;
+  }
+
   document.getElementById('zonaBadge').innerHTML =
     zona === "CAFÉ"
       ? "<div class='badge cafe'>CAFÉ</div>"
@@ -169,10 +174,6 @@ function generateAndGo(){
 
   let baseOrder = merchant.Ds_Order || "FER0000000000";
   merchant.Ds_Order = baseOrder.toString().slice(0,-4) + random4();
-
-  const dt = getDate();
-  merchant.Ds_Date = dt.date;
-  merchant.Ds_Hour = dt.hour;
 
   const url = baseUrl
     + "?datos=" + b64encode(datos)
@@ -183,7 +184,5 @@ function generateAndGo(){
   window.location.href = url;
 }
 
-</script>
-
-</body>
+</script></body>
 </html>
