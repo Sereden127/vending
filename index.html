@@ -172,8 +172,8 @@ function generateAndGo(){
       ? "<div class='badge cafe'>CAFÉ</div>"
       : "<div class='badge snack'>SNACK</div>";
 
-  let baseOrder = merchant.Ds_Order || "FER0000000000";
-  merchant.Ds_Order = baseOrder.toString().slice(0,-4) + random4();
+  // Mantener Ds_Order fijo (no modificar para no invalidar firma)
+// merchant.Ds_Order se deja tal cual venga del enlace base
 
   const url = baseUrl
     + "?datos=" + b64encode(datos)
