@@ -95,12 +95,12 @@
 
 <script>
 
-// BASES
+// BASES ORIGINALES
 const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
 
 const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSODYxNzEyNTM5IiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMSBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgyIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=NnZFRxpyHH-_CrYTKdlFXLs5clQ25Qwt4PJy56fs_bI=";
 
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSOTA0NDU0NTgxIiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMiBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTg0IiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcmR1Y3ROYW1lIjoiQ0FGRSBDT04gTEVDSEUgQ0FQIn0=&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=dHLbPf4IKQ2ejbPREHLOFPBvx8rONgJk3IY1Pib-77I=";
+const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSOTA0NDU0NTgxIiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMiBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTg0IiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=dHLbPf4IKQ2ejbPREHLOFPBvx8rONgJk3IY1Pib-77I=";
 
 function decode(b64){
   try { return JSON.parse(atob(b64)); }
@@ -129,42 +129,55 @@ selInput.addEventListener('input', () => {
 
 function go(){
 
-  const sel = document.getElementById('seleccion').value;
-  const email = document.getElementById('userEmail').value;
-  const sugar = document.getElementById('sugarLevel')?.value || 0;
+  try {
 
-  let base;
+    const sel = document.getElementById('seleccion').value;
+    const email = document.getElementById('userEmail').value;
+    const sugar = document.getElementById('sugarLevel')?.value || 0;
 
-  if(sel.length === 4){
-    base = (cafeMachine === 1) ? cafeBase : cafeBase2;
-  } else {
-    base = snackBase;
+    let base;
+
+    if(sel.length === 4){
+      base = (cafeMachine === 1) ? cafeBase : cafeBase2;
+    } else {
+      base = snackBase;
+    }
+
+    const url = new URL(base);
+
+    const datos = decode(url.searchParams.get("datos"));
+    const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
+
+    // 🔥 ORDER ALEATORIO
+    const fakeOrder =
+      "FER" +
+      Date.now().toString().slice(-10) +
+      Math.floor(Math.random() * 1000).toString().padStart(3,"0");
+
+    // datos normales
+    datos.seleccion = sel;
+    datos.productName = "SELECCION " + sel;
+    datos.userEmail = email;
+    datos.sugarLevel = sugar;
+
+    // visual interno
+    datos.numeroPedido = fakeOrder;
+
+    // 💥 AQUÍ SE ROMPE LA FIRMA A PROPÓSITO
+    merchant.Ds_Order = fakeOrder;
+
+    url.searchParams.set("datos", encode(datos));
+    url.searchParams.set("Ds_MerchantParameters", encode(merchant));
+
+    console.log("ORDER MODIFICADO:", fakeOrder);
+    console.log("⚠️ ESPERADO: error de firma");
+
+    window.location.href = url.toString();
+
+  } catch (e) {
+    console.error(e);
+    alert("Error interno en generación de pedido");
   }
-
-  const url = new URL(base);
-
-  const datos = decode(url.searchParams.get("datos"));
-  const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
-
-  // 🔥 ORDER SOLO VISUAL
-  const demoOrder =
-    "FER" +
-    Date.now().toString().slice(-10) +
-    Math.floor(Math.random() * 1000).toString().padStart(3,"0");
-
-  datos.seleccion = sel;
-  datos.productName = "SELECCION " + sel;
-  datos.userEmail = email;
-
-  datos.numeroPedido = demoOrder;
-  datos.sugarLevel = sugar;
-
-  url.searchParams.set("datos", encode(datos));
-  url.searchParams.set("Ds_MerchantParameters", encode(merchant));
-
-  console.log("ORDER:", demoOrder);
-
-  window.location.href = url.toString();
 }
 
 </script>
