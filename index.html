@@ -2,10 +2,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vending Ozturk - V2</title>
+  <title>Vending Ozturk</title>
 
   <style>
-    :root{
+   :root{
       --bg:#0f1115;
       --card:#171a21;
       --text:#e8eaf0;
@@ -15,27 +15,51 @@
       --border:#2a2f3a;
     }
 
-    body{ font-family: Arial; margin:0; padding:16px; background:var(--bg); color:var(--text); }
-    .container{ max-width:420px; margin:auto; }
-    .box{ background:var(--card); padding:14px; margin-bottom:12px; border-radius:14px; }
+    body{
+      font-family: Arial, sans-serif;
+      padding:16px;
+      background:var(--bg);
+      color:var(--text);
+      margin:0;
+    }
 
-    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+    .container{ max-width:420px; margin:0 auto; }
+
+    .box{
+      background:var(--card);
+      padding:14px;
+      margin-bottom:12px;
+      border-radius:14px;
+    }
 
     input{
-      width:100%; padding:12px; border-radius:10px;
+      width:100%;
+      padding:12px;
+      margin-top:6px;
+      border-radius:10px;
       border:1px solid var(--border);
-      background:var(--input); color:var(--text);
+      font-size:16px;
+      background:var(--input);
+      color:var(--text);
       box-sizing:border-box;
     }
 
     button{
-      width:100%; padding:16px;
-      border:none; border-radius:14px;
-      background:var(--green); color:white;
+      width:100%;
+      padding:16px;
+      border:none;
+      border-radius:14px;
       font-size:18px;
+      cursor:pointer;
+      font-weight:bold;
+      background:var(--green);
+      color:white;
+      margin-bottom:6px;
     }
 
-    .selected{ outline:2px solid white; }
+    .selected{
+      outline:2px solid white;
+    }
   </style>
 </head>
 
@@ -43,26 +67,23 @@
 
 <div class="container">
 
-  <h2>📱 Vending Ozturk (V2 CLEAN)</h2>
+  <h2>📱 Vending Ozturk</h2>
 
   <div class="box">
-    <button onclick="setMachine(1)" id="b1">☕ Café 1</button>
-    <button onclick="setMachine(2)" id="b2">☕ Café 2</button>
+    <button id="btnCafe1" onclick="setMachine(1)">☕ Café 1</button>
+    <button id="btnCafe2" onclick="setMachine(2)">☕ Café 2</button>
   </div>
 
   <div class="box">
-    <label>Order ID</label>
-    <input id="orderId" />
+    <input id="orderId" type="text" placeholder="ID Order" />
   </div>
 
   <div class="box">
-    <label>Selección</label>
-    <input id="sel" />
+    <input id="seleccion" type="text" placeholder="Ej: 777 o 1003" />
   </div>
 
   <div class="box">
-    <label>Email</label>
-    <input id="email" />
+    <input id="userEmail" placeholder="Email" />
   </div>
 
   <button onclick="go()">PEDIR</button>
@@ -71,57 +92,65 @@
 
 <script>
 
-// ================= BASE DATA (plantilla limpia) =================
-const baseTemplate = {
-  Ds_Order: "",
-  Ds_Amount: 100,
-  Ds_Currency: "978"
-};
-
 let machine = 1;
-
-function buildPayload(){
-
-  const orderId = document.getElementById("orderId").value;
-  const sel = document.getElementById("sel").value;
-  const email = document.getElementById("email").value;
-
-  const merchant = structuredClone(baseTemplate);
-
-  merchant.Ds_Order = orderId;
-
-  const datos = {
-    seleccion: sel,
-    userEmail: email,
-    machine: machine
-  };
-
-  const url = new URL("https://fersomaticweb.onrender.com/pago-ok-seleccion");
-
-  url.searchParams.set("Ds_MerchantParameters", btoa(JSON.stringify(merchant)));
-  url.searchParams.set("datos", btoa(JSON.stringify(datos)));
-
-  return url;
-}
 
 function setMachine(n){
   machine = n;
-  document.getElementById("b1").classList.remove("selected");
-  document.getElementById("b2").classList.remove("selected");
-  document.getElementById("b"+n).classList.add("selected");
+
+  document.getElementById("btnCafe1").classList.remove("selected");
+  document.getElementById("btnCafe2").classList.remove("selected");
+
+  document.getElementById("btnCafe"+n).classList.add("selected");
 }
 
-function go(){
+async function go(){
 
-  if (!document.getElementById("orderId").value) {
-    alert("Order ID obligatorio");
+  const orderId = document.getElementById("orderId").value;
+  const sel = document.getElementById("seleccion").value;
+  const email = document.getElementById("userEmail").value;
+
+  if (!orderId) {
+    alert("Falta Order ID");
     return;
   }
 
-  window.location.href = buildPayload().toString();
+  try {
+
+    const res = await fetch("https://vending-backend-sjq8.onrender.com/create-payment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        orderId,
+        amount: sel.length === 4 ? 50 : 100,
+        seleccion: sel,
+        email
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error("Error backend: " + res.status);
+    }
+
+    const data = await res.json();
+
+    console.log("BACKEND RESPONSE:", data);
+
+    const url = new URL("https://fersomaticweb.onrender.com/pago-ok-seleccion");
+
+    url.searchParams.set("Ds_MerchantParameters", data.Ds_MerchantParameters);
+    url.searchParams.set("Ds_Signature", data.Ds_Signature);
+
+    window.location.href = url.toString();
+
+  } catch (err) {
+    console.error(err);
+    alert("Error conectando con backend");
+  }
 }
 
-setMachine(1);
+document.getElementById("btnCafe1").classList.add("selected");
 
 </script>
 
