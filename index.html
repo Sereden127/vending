@@ -1,159 +1,79 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vending Ozturk</title>
-
-  <style>
-    :root{
-      --bg:#0f1115;
-      --card:#171a21;
-      --text:#e8eaf0;
-      --input:#222634;
-      --border:#2a2f3a;
-      --green:#1db954;
-    }
-
-    body{
-      margin:0;
-      padding:16px;
-      font-family:Arial;
-      background:var(--bg);
-      color:var(--text);
-    }
-
-    .container{
-      max-width:420px;
-      margin:auto;
-    }
-
-    .box{
-      background:var(--card);
-      padding:14px;
-      margin-bottom:12px;
-      border-radius:14px;
-    }
-
-    input{
-      width:100%;
-      padding:12px;
-      margin-top:6px;
-      border-radius:10px;
-      border:1px solid var(--border);
-      background:var(--input);
-      color:var(--text);
-      font-size:16px;
-      box-sizing:border-box;
-    }
-
-    button{
-      width:100%;
-      padding:16px;
-      border:none;
-      border-radius:14px;
-      font-size:18px;
-      font-weight:bold;
-      cursor:pointer;
-      background:var(--green);
-      color:white;
-      margin-top:6px;
-    }
-
-    .selected{
-      outline:2px solid white;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Vending Debug Lab</title>
+<style>
+body{
+  font-family:Arial;
+  background:#0f1115;
+  color:#e8eaf0;
+  padding:16px;
+}
+textarea,input,button{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:8px;
+  border:1px solid #2a2f3a;
+  background:#222634;
+  color:white;
+}
+button{
+  background:#1db954;
+  font-weight:bold;
+  cursor:pointer;
+}
+.box{
+  max-width:700px;
+  margin:auto;
+}
+</style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="box">
 
-  <h2>📱 Vending Ozturk</h2>
+<h2>🧪 Vending Debug Lab</h2>
 
-  <!-- 🔘 SELECTOR MÁQUINAS -->
-  <div class="box">
-    <button id="btnCafe1" onclick="setMachine(1)">☕ Café 1</button>
-    <button id="btnCafe2" onclick="setMachine(2)">☕ Café 2</button>
-  </div>
+<p>Pega aquí tu enlace completo:</p>
 
-  <!-- PRODUCTO -->
-  <div class="box">
-    <input id="seleccion" type="text" inputmode="numeric" placeholder="Ej: 777 o 1003" />
-  </div>
+<textarea id="url" rows="6"></textarea>
 
-  <!-- EMAIL -->
-  <div class="box">
-    <input id="userEmail" placeholder="Email" />
-  </div>
+<p>Parámetro de test (opcional):</p>
+<input id="param" placeholder="ej: test=1 o debug=abc" />
 
-  <!-- AZÚCAR -->
-  <div class="box" id="sugarBox" style="display:none;">
-    <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
-  </div>
+<button onclick="runTest()">PROBAR ENLACE</button>
 
-  <button onclick="go()">PEDIR</button>
+<h3>Resultado:</h3>
+<pre id="out"></pre>
 
 </div>
 
 <script>
 
-// ================= ENLACES ORIGINALES =================
-const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJ...";
-const cafeBase  = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJ...";
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJ...";
+function runTest(){
 
-// ================= STATE =================
-let machine = 1;
+  const base = document.getElementById("url").value.trim();
+  const extra = document.getElementById("param").value.trim();
 
-// ================= SELECTOR =================
-function setMachine(n){
-  machine = n;
+  let url = new URL(base);
 
-  document.getElementById("btnCafe1").classList.remove("selected");
-  document.getElementById("btnCafe2").classList.remove("selected");
-  document.getElementById("btnCafe"+n).classList.add("selected");
-}
-
-// ================= AZÚCAR VISIBILITY =================
-document.getElementById("seleccion").addEventListener("input", (e) => {
-  document.getElementById("sugarBox").style.display =
-    e.target.value.length === 4 ? "block" : "none";
-});
-
-// ================= MAIN =================
-function go(){
-
-  const sel = document.getElementById("seleccion").value || "";
-  const email = document.getElementById("userEmail").value || "";
-  const sugar = document.getElementById("sugarLevel")?.value || 0;
-
-  // base según máquina + tipo producto
-  const base = sel.length === 4
-    ? (machine === 1 ? cafeBase : cafeBase2)
-    : snackBase;
-
-  const url = new URL(base);
-
-  // ================= NO TOCAMOS FIRMA NI DATOS =================
-  const datos = url.searchParams.get("datos");
-  const merchant = url.searchParams.get("Ds_MerchantParameters");
-  const signature = url.searchParams.get("Ds_Signature");
-
-  // ================= WORKAROUND OPCIÓN C =================
-  const ts = Date.now();
-
-  url.searchParams.set("v", ts);        // evita URL idéntica
-  url.searchParams.set("sel", sel);     // metadata externa
-  url.searchParams.set("email", email);
-
-  if(sel.length === 4){
-    url.searchParams.set("sugar", sugar);
+  if(extra){
+    const [k,v] = extra.split("=");
+    url.searchParams.set(k, v || "1");
   }
 
-  // ================= REDIRECT =================
-  window.location.href = url.toString();
+  const finalUrl = url.toString();
+
+  document.getElementById("out").innerText =
+    "URL FINAL:\n" + finalUrl + "\n\n" +
+    "➡ Abriendo enlace...\n";
+
+  // abrir en nueva pestaña
+  window.open(finalUrl, "_blank");
+
 }
 
 </script>
