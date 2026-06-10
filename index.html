@@ -23,10 +23,7 @@
       color:var(--text);
     }
 
-    .container{
-      max-width:420px;
-      margin:auto;
-    }
+    .container{ max-width:420px; margin:auto; }
 
     .box{
       background:var(--card);
@@ -60,9 +57,7 @@
       margin-top:6px;
     }
 
-    .selected{
-      outline:2px solid white;
-    }
+    .selected{ outline:2px solid white; }
   </style>
 </head>
 
@@ -78,7 +73,7 @@
   </div>
 
   <div class="box">
-    <input id="seleccion" type="text" inputmode="numeric" placeholder="Ej: 777 o 1003" />
+    <input id="seleccion" inputmode="numeric" placeholder="Ej: 777 o 1003" />
   </div>
 
   <div class="box">
@@ -91,7 +86,7 @@
 
   <div class="box">
     <label>Ds_Order</label>
-    <input id="orderView" type="text" readonly />
+    <input id="orderView" readonly />
   </div>
 
   <button id="sendBtn" onclick="go()">PEDIR</button>
@@ -100,39 +95,47 @@
 
 <script>
 
-// ================= BASES =================
+// ================= BASES (IMPORTANTE: NO PUEDEN SER "...") =================
+const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REEMPLAZAR_REAL";
+const cafeBase  = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REEMPLAZAR_REAL";
+const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REEMPLAZAR_REAL";
 
-const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
-
-const cafeBase = "...";
-const cafeBase2 = "...";
-
+// ================= STATE =================
 let cafeMachine = 1;
 let isProcessing = false;
 let orderCounter = 0;
 
-// ================= ORDER =================
-
+// ================= ORDER (SIN COLISIONES) =================
 function generateDsOrder(machineId){
   orderCounter++;
 
   const time = Date.now().toString(36).toUpperCase();
   const counter = orderCounter.toString(36).toUpperCase();
-
   const rand = crypto.getRandomValues(new Uint8Array(2))
-    .reduce((a,b)=> a + b.toString(16).padStart(2,'0'), '');
+    .reduce((a,b)=>a + b.toString(16).padStart(2,'0'), '');
 
   return `FER-${machineId}-${time}-${counter}-${rand}`.toUpperCase();
 }
 
-// ================= ENCODING =================
+// ================= SAFE HELPERS =================
+function safeDecode(b64){
+  try {
+    if (!b64 || b64 === "..." || b64.length < 10) return {};
+    return JSON.parse(atob(b64));
+  } catch {
+    return {};
+  }
+}
 
-function encodeSafe(obj){
-  return btoa(JSON.stringify(obj));
+function safeEncode(obj){
+  try {
+    return btoa(JSON.stringify(obj));
+  } catch {
+    return "";
+  }
 }
 
 // ================= UI =================
-
 function setCafe(n){
   cafeMachine = n;
 
@@ -146,56 +149,42 @@ document.getElementById('seleccion').addEventListener('input', () => {
   document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
 });
 
-// ================= MAIN FIXED =================
-
+// ================= MAIN (BULLETPROOF) =================
 async function go(){
+
+  console.log("PEDIR CLICK");
+
+  if (isProcessing) return;
+  isProcessing = true;
+
+  const btn = document.getElementById("sendBtn");
+  btn.innerText = "PROCESANDO...";
 
   try {
 
-    if (isProcessing) return;
-    isProcessing = true;
-
-    const btn = document.getElementById("sendBtn");
-    btn.innerText = "PROCESANDO...";
-
-    const sel = document.getElementById('seleccion').value;
-    const email = document.getElementById('userEmail').value;
+    const sel = document.getElementById('seleccion').value || "";
+    const email = document.getElementById('userEmail').value || "";
     const sugar = document.getElementById('sugarLevel')?.value || 0;
 
-    const base = (sel.length === 4)
-      ? (cafeMachine === 1 ? cafeBase : cafeBase2)
-      : snackBase;
+    let base = snackBase;
+
+    if (sel.length === 4) {
+      base = cafeMachine === 1 ? cafeBase : cafeBase2;
+    }
+
+    if (!base || base.includes("REEMPLAZAR_REAL")) {
+      throw new Error("Base URL no configurada");
+    }
 
     const url = new URL(base);
 
-    // ================= SAFE PARSE =================
-    let datos = {};
-    let merchant = {};
+    const datos = safeDecode(url.searchParams.get("datos"));
+    const merchant = safeDecode(url.searchParams.get("Ds_MerchantParameters"));
 
-    const datosB64 = url.searchParams.get("datos");
-    const merchantB64 = url.searchParams.get("Ds_MerchantParameters");
-
-    if (datosB64 && datosB64 !== "...") {
-      try {
-        datos = JSON.parse(atob(datosB64));
-      } catch (e) {
-        console.warn("Datos corruptos");
-      }
-    }
-
-    if (merchantB64 && merchantB64 !== "...") {
-      try {
-        merchant = JSON.parse(atob(merchantB64));
-      } catch (e) {
-        console.warn("Merchant corrupto");
-      }
-    }
-
-    // ================= ORDER =================
     const fakeOrder = generateDsOrder(cafeMachine);
+
     document.getElementById("orderView").value = fakeOrder;
 
-    // ================= UPDATE =================
     datos.seleccion = sel;
     datos.userEmail = email;
     datos.sugarLevel = sugar;
@@ -203,10 +192,9 @@ async function go(){
 
     merchant.Ds_Order = fakeOrder;
 
-    const merchantEncoded = encodeSafe(merchant);
-    const datosEncoded = encodeSafe(datos);
+    const datosEncoded = safeEncode(datos);
+    const merchantEncoded = safeEncode(merchant);
 
-    // ================= SIGN =================
     const secretKey = "TU_CLAVE_SECRETA";
 
     const signature = await signHmacSHA256(secretKey, merchantEncoded);
@@ -219,16 +207,19 @@ async function go(){
     window.location.href = url.toString();
 
   } catch (err) {
+
     console.error("ERROR GO:", err);
-    alert("Error generando pedido");
+
+    alert("Error generando pedido. Revisa consola.");
+
     isProcessing = false;
-    document.getElementById("sendBtn").innerText = "PEDIR";
+    btn.innerText = "PEDIR";
   }
 }
 
 // ================= HMAC =================
-
 async function signHmacSHA256(secret, data) {
+
   const enc = new TextEncoder();
 
   const key = await crypto.subtle.importKey(
@@ -239,20 +230,16 @@ async function signHmacSHA256(secret, data) {
     ["sign"]
   );
 
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    enc.encode(data)
-  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
 
-  const bytes = new Uint8Array(signature);
-  let binary = '';
+  const bytes = new Uint8Array(sig);
+  let binary = "";
   bytes.forEach(b => binary += String.fromCharCode(b));
 
   return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+    .replace(/\+/g,'-')
+    .replace(/\//g,'_')
+    .replace(/=+$/,'');
 }
 
 </script>
