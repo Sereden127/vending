@@ -23,7 +23,10 @@
       color:var(--text);
     }
 
-    .container{ max-width:420px; margin:auto; }
+    .container{
+      max-width:420px;
+      margin:auto;
+    }
 
     .box{
       background:var(--card);
@@ -57,7 +60,9 @@
       margin-top:6px;
     }
 
-    .selected{ outline:2px solid white; }
+    .selected{
+      outline:2px solid white;
+    }
   </style>
 </head>
 
@@ -73,7 +78,7 @@
   </div>
 
   <div class="box">
-    <input id="seleccion" inputmode="numeric" placeholder="Ej: 777 o 1003" />
+    <input id="seleccion" type="text" inputmode="numeric" placeholder="Ej: 777 o 1003" />
   </div>
 
   <div class="box">
@@ -86,7 +91,7 @@
 
   <div class="box">
     <label>Ds_Order</label>
-    <input id="orderView" readonly />
+    <input id="orderView" type="text" readonly />
   </div>
 
   <button id="sendBtn" onclick="go()">PEDIR</button>
@@ -95,32 +100,30 @@
 
 <script>
 
-// ================= BASES (IMPORTANTE: NO PUEDEN SER "...") =================
-const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REEMPLAZAR_REAL";
-const cafeBase  = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REEMPLAZAR_REAL";
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REEMPLAZAR_REAL";
+// ================= BASES =================
+const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REPLACE";
+const cafeBase  = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REPLACE";
+const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REPLACE";
 
 // ================= STATE =================
 let cafeMachine = 1;
 let isProcessing = false;
 let orderCounter = 0;
 
-// ================= ORDER (SIN COLISIONES) =================
+// ================= ORDER (FIABLE Y SIMPLE) =================
 function generateDsOrder(machineId){
   orderCounter++;
 
   const time = Date.now().toString(36).toUpperCase();
-  const counter = orderCounter.toString(36).toUpperCase();
   const rand = crypto.getRandomValues(new Uint8Array(2))
     .reduce((a,b)=>a + b.toString(16).padStart(2,'0'), '');
 
-  return `FER-${machineId}-${time}-${counter}-${rand}`.toUpperCase();
+  return `FER-${machineId}-${time}-${orderCounter}-${rand}`;
 }
 
-// ================= SAFE HELPERS =================
+// ================= HELPERS =================
 function safeDecode(b64){
   try {
-    if (!b64 || b64 === "..." || b64.length < 10) return {};
     return JSON.parse(atob(b64));
   } catch {
     return {};
@@ -128,11 +131,7 @@ function safeDecode(b64){
 }
 
 function safeEncode(obj){
-  try {
-    return btoa(JSON.stringify(obj));
-  } catch {
-    return "";
-  }
+  return btoa(JSON.stringify(obj));
 }
 
 // ================= UI =================
@@ -149,100 +148,20 @@ document.getElementById('seleccion').addEventListener('input', () => {
   document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
 });
 
-// ================= MAIN (BULLETPROOF) =================
+// ================= MAIN (SIMPLE Y ESTABLE) =================
 async function go(){
-
-  console.log("PEDIR CLICK");
 
   if (isProcessing) return;
   isProcessing = true;
 
-  const btn = document.getElementById("sendBtn");
-  btn.innerText = "PROCESANDO...";
+  document.getElementById("sendBtn").innerText = "PROCESANDO...";
 
-  try {
+  const sel = document.getElementById('seleccion').value || "";
+  const email = document.getElementById('userEmail').value || "";
+  const sugar = document.getElementById('sugarLevel')?.value || 0;
 
-    const sel = document.getElementById('seleccion').value || "";
-    const email = document.getElementById('userEmail').value || "";
-    const sugar = document.getElementById('sugarLevel')?.value || 0;
+  const base = (sel.length === 4)
+    ? (cafeMachine === 1 ? cafeBase : cafeBase2)
+    : snackBase;
 
-    let base = snackBase;
-
-    if (sel.length === 4) {
-      base = cafeMachine === 1 ? cafeBase : cafeBase2;
-    }
-
-    if (!base || base.includes("REEMPLAZAR_REAL")) {
-      throw new Error("Base URL no configurada");
-    }
-
-    const url = new URL(base);
-
-    const datos = safeDecode(url.searchParams.get("datos"));
-    const merchant = safeDecode(url.searchParams.get("Ds_MerchantParameters"));
-
-    const fakeOrder = generateDsOrder(cafeMachine);
-
-    document.getElementById("orderView").value = fakeOrder;
-
-    datos.seleccion = sel;
-    datos.userEmail = email;
-    datos.sugarLevel = sugar;
-    datos.numeroPedido = fakeOrder;
-
-    merchant.Ds_Order = fakeOrder;
-
-    const datosEncoded = safeEncode(datos);
-    const merchantEncoded = safeEncode(merchant);
-
-    const secretKey = "TU_CLAVE_SECRETA";
-
-    const signature = await signHmacSHA256(secretKey, merchantEncoded);
-
-    url.searchParams.set("datos", datosEncoded);
-    url.searchParams.set("Ds_MerchantParameters", merchantEncoded);
-    url.searchParams.set("Ds_Signature", signature);
-    url.searchParams.set("Ds_SignatureVersion", "HMAC_SHA256_V1");
-
-    window.location.href = url.toString();
-
-  } catch (err) {
-
-    console.error("ERROR GO:", err);
-
-    alert("Error generando pedido. Revisa consola.");
-
-    isProcessing = false;
-    btn.innerText = "PEDIR";
-  }
-}
-
-// ================= HMAC =================
-async function signHmacSHA256(secret, data) {
-
-  const enc = new TextEncoder();
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
-
-  const bytes = new Uint8Array(sig);
-  let binary = "";
-  bytes.forEach(b => binary += String.fromCharCode(b));
-
-  return btoa(binary)
-    .replace(/\+/g,'-')
-    .replace(/\//g,'_')
-    .replace(/=+$/,'');
-}
-
-</script>
-
-</body>
-</html>
+  const url = new
