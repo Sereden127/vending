@@ -10,23 +10,22 @@
       --bg:#0f1115;
       --card:#171a21;
       --text:#e8eaf0;
-      --muted:#aab0be;
-      --green:#1db954;
       --input:#222634;
       --border:#2a2f3a;
+      --green:#1db954;
     }
 
     body{
-      font-family: Arial, sans-serif;
+      margin:0;
       padding:16px;
+      font-family:Arial;
       background:var(--bg);
       color:var(--text);
-      margin:0;
     }
 
     .container{
       max-width:420px;
-      margin:0 auto;
+      margin:auto;
     }
 
     .box{
@@ -42,9 +41,9 @@
       margin-top:6px;
       border-radius:10px;
       border:1px solid var(--border);
-      font-size:16px;
       background:var(--input);
       color:var(--text);
+      font-size:16px;
       box-sizing:border-box;
     }
 
@@ -54,8 +53,8 @@
       border:none;
       border-radius:14px;
       font-size:18px;
-      cursor:pointer;
       font-weight:bold;
+      cursor:pointer;
       background:var(--green);
       color:white;
       margin-top:6px;
@@ -86,28 +85,28 @@
     <input id="userEmail" placeholder="Email" />
   </div>
 
+  <!-- AZÚCAR -->
   <div class="box" id="sugarBox" style="display:none;">
     <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
   </div>
 
-  <!-- ✔️ NUEVO: VISOR DS_ORDER -->
+  <!-- DS ORDER -->
   <div class="box">
     <label>Ds_Order (pedido generado)</label>
     <input id="orderView" type="text" readonly />
   </div>
 
-  <button onclick="go()">PEDIR</button>
+  <button id="sendBtn" onclick="go()">PEDIR</button>
 
 </div>
 
 <script>
 
-// BASES ORIGINALES
+// BASES
 const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
 
-const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSODYxNzEyNTM5IiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMSBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgyIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=NnZFRxpyHH-_CrYTKdlFXLs5clQ25Qwt4PJy56fs_bI=";
-
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSOTA0NDU0NTgxIiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMiBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTg0IiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=dHLbPf4IKQ2ejbPREHLOFPBvx8rONgJk3IY1Pib-77I=";
+const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=...";
+const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=...";
 
 function decode(b64){
   try { return JSON.parse(atob(b64)); }
@@ -119,6 +118,7 @@ function encode(obj){
 }
 
 let cafeMachine = 1;
+let isProcessing = false;
 
 function setCafe(n){
   cafeMachine = n;
@@ -127,23 +127,58 @@ function setCafe(n){
   document.getElementById('cafe' + n + 'Btn').classList.add('selected');
 }
 
-const selInput = document.getElementById('seleccion');
-const sugarBox = document.getElementById('sugarBox');
-
-selInput.addEventListener('input', () => {
-  sugarBox.style.display = (selInput.value.length === 4) ? 'block' : 'none';
+document.getElementById('seleccion').addEventListener('input', () => {
+  const val = document.getElementById('seleccion').value;
+  document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
 });
 
 function go(){
+
+  if (isProcessing) return;
+  isProcessing = true;
+
+  const btn = document.getElementById("sendBtn");
+  btn.innerText = "PROCESANDO...";
 
   const sel = document.getElementById('seleccion').value;
   const email = document.getElementById('userEmail').value;
   const sugar = document.getElementById('sugarLevel')?.value || 0;
 
-  let base = (sel.length === 4)
+  const base = (sel.length === 4)
     ? (cafeMachine === 1 ? cafeBase : cafeBase2)
     : snackBase;
 
   const url = new URL(base);
 
   const datos = decode(url.searchParams.get("datos"));
+  const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
+
+  const fakeOrder =
+    "FER" +
+    Math.floor(Math.random() * 1e9)
+      .toString()
+      .padStart(9,"0");
+
+  document.getElementById("orderView").value = fakeOrder;
+
+  datos.seleccion = sel;
+  datos.userEmail = email;
+  datos.sugarLevel = sugar;
+  datos.numeroPedido = fakeOrder;
+
+  merchant.Ds_Order = fakeOrder;
+
+  url.searchParams.set("datos", encode(datos));
+  url.searchParams.set("Ds_MerchantParameters", encode(merchant));
+
+  console.log("ORDER:", fakeOrder);
+
+  setTimeout(() => {
+    window.location.href = url.toString();
+  }, 150);
+}
+
+</script>
+
+</body>
+</html>
