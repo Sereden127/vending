@@ -6,33 +6,22 @@
   <title>Vending Ozturk</title>
 
   <style>
-    :root{
-      --bg:#0f1115;
-      --card:#171a21;
-      --text:#e8eaf0;
-      --input:#222634;
-      --border:#2a2f3a;
-      --green:#1db954;
-    }
-
     body{
       margin:0;
       padding:16px;
       font-family:Arial;
-      background:var(--bg);
-      color:var(--text);
-    }
-
-    .container{
-      max-width:420px;
-      margin:auto;
+      background:#0f1115;
+      color:#e8eaf0;
     }
 
     .box{
-      background:var(--card);
+      background:#171a21;
       padding:14px;
       margin-bottom:12px;
       border-radius:14px;
+      max-width:420px;
+      margin-left:auto;
+      margin-right:auto;
     }
 
     input{
@@ -40,11 +29,10 @@
       padding:12px;
       margin-top:6px;
       border-radius:10px;
-      border:1px solid var(--border);
-      background:var(--input);
-      color:var(--text);
+      border:1px solid #2a2f3a;
+      background:#222634;
+      color:white;
       font-size:16px;
-      box-sizing:border-box;
     }
 
     button{
@@ -54,96 +42,80 @@
       border-radius:14px;
       font-size:18px;
       font-weight:bold;
-      cursor:pointer;
-      background:var(--green);
+      background:#1db954;
       color:white;
-      margin-top:6px;
+      cursor:pointer;
     }
 
-    .selected{
-      outline:2px solid white;
-    }
+    #sugarBox{ display:none; }
   </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="box">
+  <h2>Vending Ozturk</h2>
 
-  <h2>📱 Vending Ozturk</h2>
+  <button onclick="setMachine(1)">Máquina 1</button>
+  <button onclick="setMachine(2)">Máquina 2</button>
+</div>
 
-  <div class="box">
-    <button id="cafe1Btn" onclick="setCafe(1)">☕ Máquina Café 1</button>
-    <button id="cafe2Btn" onclick="setCafe(2)">☕ Máquina Café 2</button>
-  </div>
+<div class="box">
+  <input id="selection" placeholder="Producto (3 o 4 dígitos)" />
+</div>
 
-  <div class="box">
-    <input id="seleccion" inputmode="numeric" placeholder="Ej: 777 o 1003" />
-  </div>
+<div class="box">
+  <input id="email" placeholder="Email" />
+</div>
 
-  <div class="box">
-    <input id="userEmail" placeholder="Email" />
-  </div>
+<div class="box" id="sugarBox">
+  <input id="sugar" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
+</div>
 
-  <div class="box" id="sugarBox" style="display:none;">
-    <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
-  </div>
-
+<div class="box">
   <button onclick="go()">PEDIR</button>
-
 </div>
 
 <script>
 
-// ================= BASES =================
-const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REPLACE";
-const cafeBase  = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REPLACE";
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=REPLACE";
+// ================= ENLACES ORIGINALES =================
+const links = {
+  1: "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=LINK_M1",
+  2: "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=LINK_M2"
+};
 
-let cafeMachine = 1;
+let machine = 1;
 
 // ================= UI =================
-function setCafe(n){
-  cafeMachine = n;
-
-  document.getElementById('cafe1Btn').classList.remove('selected');
-  document.getElementById('cafe2Btn').classList.remove('selected');
-  document.getElementById('cafe' + n + 'Btn').classList.add('selected');
+function setMachine(n){
+  machine = n;
 }
 
-document.getElementById('seleccion').addEventListener('input', () => {
-  const val = document.getElementById('seleccion').value;
-  document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
+document.getElementById("selection").addEventListener("input", (e) => {
+  document.getElementById("sugarBox").style.display =
+    e.target.value.length === 4 ? "block" : "none";
 });
 
 // ================= MAIN =================
 function go(){
 
-  const sel = document.getElementById('seleccion').value || "";
-  const email = document.getElementById('userEmail').value || "";
-  const sugar = document.getElementById('sugarLevel')?.value || 0;
+  const sel = document.getElementById("selection").value || "";
+  const email = document.getElementById("email").value || "";
+  const sugar = document.getElementById("sugar").value || "";
 
-  const base = (sel.length === 4)
-    ? (cafeMachine === 1 ? cafeBase : cafeBase2)
-    : snackBase;
+  let url = links[machine];
 
-  const url = new URL(base);
+  // 🔥 SOLO AÑADIMOS PARÁMETROS EXTERNOS (SIN TOCAR datos)
+  const finalUrl = new URL(url);
 
-  let datos = {};
-  try {
-    datos = JSON.parse(atob(url.searchParams.get("datos")));
-  } catch {
-    datos = {};
+  finalUrl.searchParams.set("seleccion", sel);
+  finalUrl.searchParams.set("userEmail", email);
+
+  if (sel.length === 4) {
+    finalUrl.searchParams.set("sugarLevel", sugar);
   }
 
-  // SOLO DATOS DE UI (NO PAGOS, NO FIRMA)
-  datos.seleccion = sel;
-  datos.userEmail = email;
-  datos.sugarLevel = sugar;
-
-  url.searchParams.set("datos", btoa(JSON.stringify(datos)));
-
-  window.location.href = url.toString();
+  window.location.href = finalUrl.toString();
 }
 
 </script>
