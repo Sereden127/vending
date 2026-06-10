@@ -94,11 +94,13 @@
     <input id="orderView" type="text" readonly />
   </div>
 
-  <button onclick="go()" id="sendBtn">PEDIR</button>
+  <button id="sendBtn" onclick="go()">PEDIR</button>
 
 </div>
 
 <script>
+
+// ================= BASES =================
 
 const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
 
@@ -110,6 +112,7 @@ let isProcessing = false;
 let orderCounter = 0;
 
 // ================= ORDER =================
+
 function generateDsOrder(machineId){
   orderCounter++;
 
@@ -123,22 +126,108 @@ function generateDsOrder(machineId){
 }
 
 // ================= ENCODING =================
-function encodeStable(obj){
-  const ordered = Object.keys(obj)
-    .sort()
-    .reduce((acc, key) => {
-      acc[key] = obj[key];
-      return acc;
-    }, {});
 
-  return btoa(JSON.stringify(ordered));
+function encodeSafe(obj){
+  return btoa(JSON.stringify(obj));
 }
 
-function decodeMerchant(b64){
-  return JSON.parse(atob(b64));
+// ================= UI =================
+
+function setCafe(n){
+  cafeMachine = n;
+
+  document.getElementById('cafe1Btn').classList.remove('selected');
+  document.getElementById('cafe2Btn').classList.remove('selected');
+  document.getElementById('cafe' + n + 'Btn').classList.add('selected');
 }
 
-// ================= HMAC FIX =================
+document.getElementById('seleccion').addEventListener('input', () => {
+  const val = document.getElementById('seleccion').value;
+  document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
+});
+
+// ================= MAIN FIXED =================
+
+async function go(){
+
+  try {
+
+    if (isProcessing) return;
+    isProcessing = true;
+
+    const btn = document.getElementById("sendBtn");
+    btn.innerText = "PROCESANDO...";
+
+    const sel = document.getElementById('seleccion').value;
+    const email = document.getElementById('userEmail').value;
+    const sugar = document.getElementById('sugarLevel')?.value || 0;
+
+    const base = (sel.length === 4)
+      ? (cafeMachine === 1 ? cafeBase : cafeBase2)
+      : snackBase;
+
+    const url = new URL(base);
+
+    // ================= SAFE PARSE =================
+    let datos = {};
+    let merchant = {};
+
+    const datosB64 = url.searchParams.get("datos");
+    const merchantB64 = url.searchParams.get("Ds_MerchantParameters");
+
+    if (datosB64 && datosB64 !== "...") {
+      try {
+        datos = JSON.parse(atob(datosB64));
+      } catch (e) {
+        console.warn("Datos corruptos");
+      }
+    }
+
+    if (merchantB64 && merchantB64 !== "...") {
+      try {
+        merchant = JSON.parse(atob(merchantB64));
+      } catch (e) {
+        console.warn("Merchant corrupto");
+      }
+    }
+
+    // ================= ORDER =================
+    const fakeOrder = generateDsOrder(cafeMachine);
+    document.getElementById("orderView").value = fakeOrder;
+
+    // ================= UPDATE =================
+    datos.seleccion = sel;
+    datos.userEmail = email;
+    datos.sugarLevel = sugar;
+    datos.numeroPedido = fakeOrder;
+
+    merchant.Ds_Order = fakeOrder;
+
+    const merchantEncoded = encodeSafe(merchant);
+    const datosEncoded = encodeSafe(datos);
+
+    // ================= SIGN =================
+    const secretKey = "TU_CLAVE_SECRETA";
+
+    const signature = await signHmacSHA256(secretKey, merchantEncoded);
+
+    url.searchParams.set("datos", datosEncoded);
+    url.searchParams.set("Ds_MerchantParameters", merchantEncoded);
+    url.searchParams.set("Ds_Signature", signature);
+    url.searchParams.set("Ds_SignatureVersion", "HMAC_SHA256_V1");
+
+    window.location.href = url.toString();
+
+  } catch (err) {
+    console.error("ERROR GO:", err);
+    alert("Error generando pedido");
+    isProcessing = false;
+    document.getElementById("sendBtn").innerText = "PEDIR";
+  }
+}
+
+// ================= HMAC =================
+
 async function signHmacSHA256(secret, data) {
   const enc = new TextEncoder();
 
@@ -164,63 +253,6 @@ async function signHmacSHA256(secret, data) {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-}
-
-// ================= UI =================
-function setCafe(n){
-  cafeMachine = n;
-  document.getElementById('cafe1Btn').classList.remove('selected');
-  document.getElementById('cafe2Btn').classList.remove('selected');
-  document.getElementById('cafe' + n + 'Btn').classList.add('selected');
-}
-
-document.getElementById('seleccion').addEventListener('input', () => {
-  const val = document.getElementById('seleccion').value;
-  document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
-});
-
-// ================= MAIN =================
-async function go(){
-
-  if (isProcessing) return;
-  isProcessing = true;
-
-  const sel = document.getElementById('seleccion').value;
-  const email = document.getElementById('userEmail').value;
-  const sugar = document.getElementById('sugarLevel')?.value || 0;
-
-  const base = (sel.length === 4)
-    ? (cafeMachine === 1 ? cafeBase : cafeBase2)
-    : snackBase;
-
-  const url = new URL(base);
-
-  const datos = decodeMerchant(url.searchParams.get("datos"));
-  const merchant = decodeMerchant(url.searchParams.get("Ds_MerchantParameters"));
-
-  const fakeOrder = generateDsOrder(cafeMachine);
-
-  document.getElementById("orderView").value = fakeOrder;
-
-  datos.seleccion = sel;
-  datos.userEmail = email;
-  datos.sugarLevel = sugar;
-  datos.numeroPedido = fakeOrder;
-
-  merchant.Ds_Order = fakeOrder;
-
-  const merchantEncoded = encodeStable(merchant);
-
-  const secretKey = "TU_CLAVE_SECRETA";
-
-  const signature = await signHmacSHA256(secretKey, merchantEncoded);
-
-  url.searchParams.set("datos", encodeStable(datos));
-  url.searchParams.set("Ds_MerchantParameters", merchantEncoded);
-  url.searchParams.set("Ds_Signature", signature);
-  url.searchParams.set("Ds_SignatureVersion", "HMAC_SHA256_V1");
-
-  window.location.href = url.toString();
 }
 
 </script>
