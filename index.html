@@ -9,7 +9,6 @@
       --bg:#0f1115;
       --card:#171a21;
       --text:#e8eaf0;
-      --muted:#aab0be;
       --green:#1db954;
       --input:#222634;
       --border:#2a2f3a;
@@ -99,7 +98,12 @@ function setMachine(n){
   document.getElementById("btnCafe"+n).classList.add("selected");
 }
 
-// 🔥 FUNCIÓN PRINCIPAL (YA SIN ORDER ID)
+// 🔥 GENERADOR DE ORDER ID (FRONTEND)
+function generateOrderId(){
+  return "ORD-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+}
+
+// 🔥 FUNCIÓN PRINCIPAL
 async function go(){
 
   const sel = document.getElementById("seleccion").value;
@@ -110,6 +114,9 @@ async function go(){
     return;
   }
 
+  // 👉 ORDER ID AUTOMÁTICO (NO LO VE EL USUARIO)
+  const orderId = generateOrderId();
+
   try {
 
     const res = await fetch("https://vending-backend-sjq8.onrender.com/create-payment", {
@@ -118,6 +125,7 @@ async function go(){
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        orderId, // 👈 se manda pero no se muestra
         amount: sel.length === 4 ? 50 : 100,
         seleccion: sel,
         email
@@ -130,9 +138,8 @@ async function go(){
 
     const data = await res.json();
 
-    console.log("RESPUESTA BACKEND:", data);
+    console.log("BACKEND RESPONSE:", data);
 
-    // 🔥 REDIRECCIÓN FINAL A TPV
     const url = new URL("https://fersomaticweb.onrender.com/pago-ok-seleccion");
 
     url.searchParams.set("Ds_MerchantParameters", data.Ds_MerchantParameters);
