@@ -23,10 +23,7 @@
       color:var(--text);
     }
 
-    .container{
-      max-width:420px;
-      margin:auto;
-    }
+    .container{ max-width:420px; margin:auto; }
 
     .box{
       background:var(--card);
@@ -90,11 +87,6 @@
     <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
   </div>
 
-  <div class="box">
-    <label>Ds_Order</label>
-    <input id="orderView" readonly />
-  </div>
-
   <button onclick="go()">PEDIR</button>
 
 </div>
@@ -108,7 +100,6 @@ const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=RE
 
 // ================= STATE =================
 let cafeMachine = 1;
-let isProcessing = false;
 
 // ================= UI =================
 function setCafe(n){
@@ -119,36 +110,14 @@ function setCafe(n){
   document.getElementById('cafe' + n + 'Btn').classList.add('selected');
 }
 
+// azúcar solo cuando selección 4 dígitos
 document.getElementById('seleccion').addEventListener('input', () => {
   const val = document.getElementById('seleccion').value;
   document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
 });
 
-// ================= SAFE HELPERS =================
-function safeDecode(b64){
-  try {
-    if (!b64 || b64 === "...") return {};
-    return JSON.parse(atob(b64));
-  } catch {
-    return {};
-  }
-}
-
-function safeEncode(obj){
-  try {
-    return btoa(JSON.stringify(obj));
-  } catch {
-    return "";
-  }
-}
-
-// ================= MAIN (RESTORED + FIXED) =================
-async function go(){
-
-  if (isProcessing) return;
-  isProcessing = true;
-
-  document.getElementById("sendBtn").innerText = "PROCESANDO...";
+// ================= MAIN (RESTO ORIGINAL FUNCIONAL) =================
+function go(){
 
   const sel = document.getElementById('seleccion').value || "";
   const email = document.getElementById('userEmail').value || "";
@@ -160,58 +129,29 @@ async function go(){
 
   const url = new URL(base);
 
-  let datos = safeDecode(url.searchParams.get("datos"));
-  let merchant = safeDecode(url.searchParams.get("Ds_MerchantParameters"));
-
-  // 🔥 AQUÍ NO GENERAMOS NADA NUEVO
-  const order = merchant.Ds_Order || "";
-
-  document.getElementById("orderView").value = order;
+  const datos = safeDecode(url.searchParams.get("datos"));
 
   datos.seleccion = sel;
   datos.userEmail = email;
   datos.sugarLevel = sugar;
 
-  merchant.Ds_Order = order;
-
-  const merchantEncoded = safeEncode(merchant);
-  const datosEncoded = safeEncode(datos);
-
-  const secretKey = "TU_CLAVE_SECRETA";
-
-  const signature = await signHmacSHA256(secretKey, merchantEncoded);
-
-  url.searchParams.set("datos", datosEncoded);
-  url.searchParams.set("Ds_MerchantParameters", merchantEncoded);
-  url.searchParams.set("Ds_Signature", signature);
-  url.searchParams.set("Ds_SignatureVersion", "HMAC_SHA256_V1");
+  url.searchParams.set("datos", safeEncode(datos));
 
   window.location.href = url.toString();
 }
 
-// ================= HMAC =================
-async function signHmacSHA256(secret, data) {
+// ================= SAFE HELPERS =================
+function safeDecode(b64){
+  try {
+    if (!b64 || b64 === "REPLACE") return {};
+    return JSON.parse(atob(b64));
+  } catch {
+    return {};
+  }
+}
 
-  const enc = new TextEncoder();
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
-
-  const bytes = new Uint8Array(sig);
-  let binary = "";
-  bytes.forEach(b => binary += String.fromCharCode(b));
-
-  return btoa(binary)
-    .replace(/\+/g,'-')
-    .replace(/\//g,'_')
-    .replace(/=+$/,'');
+function safeEncode(obj){
+  return btoa(JSON.stringify(obj));
 }
 
 </script>
