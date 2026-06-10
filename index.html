@@ -102,30 +102,6 @@ const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=RE
 
 let cafeMachine = 1;
 
-// ================= SAFE =================
-function safeDecode(b64){
-  try {
-    if (!b64 || b64 === "REPLACE") return {};
-    return JSON.parse(atob(b64));
-  } catch {
-    return {};
-  }
-}
-
-function safeEncode(obj){
-  return btoa(JSON.stringify(obj));
-}
-
-// ================= AUTH CODE (SYNC) =================
-function buildAuthFromOrder(order){
-  let hash = 0;
-  for (let i = 0; i < order.length; i++) {
-    hash = ((hash << 5) - hash) + order.charCodeAt(i);
-    hash |= 0;
-  }
-  return 'AUTH-' + Math.abs(hash).toString(36).toUpperCase();
-}
-
 // ================= UI =================
 function setCafe(n){
   cafeMachine = n;
@@ -153,23 +129,19 @@ function go(){
 
   const url = new URL(base);
 
-  let datos = safeDecode(url.searchParams.get("datos"));
+  let datos = {};
+  try {
+    datos = JSON.parse(atob(url.searchParams.get("datos")));
+  } catch {
+    datos = {};
+  }
 
-  // ================= ORDER =================
-  const order = datos.Ds_Order || "";
-
-  // ================= AUTH SYNC =================
-  const authorizationCode = buildAuthFromOrder(order);
-
-  // 🔥 SOLO EN DATOS (NO MERCHANT, NO FIRMA)
-  datos.Ds_AuthorisationCode = authorizationCode;
-
-  // ================= USER DATA =================
+  // SOLO DATOS DE UI (NO PAGOS, NO FIRMA)
   datos.seleccion = sel;
   datos.userEmail = email;
   datos.sugarLevel = sugar;
 
-  url.searchParams.set("datos", safeEncode(datos));
+  url.searchParams.set("datos", btoa(JSON.stringify(datos)));
 
   window.location.href = url.toString();
 }
