@@ -54,6 +54,7 @@
       color:white;
       font-weight:bold;
       font-size:18px;
+      cursor:pointer;
     }
   </style>
 </head>
@@ -92,7 +93,7 @@ async function go(){
 
   try {
 
-    // 🔥 LLAMADA BACKEND SANDBOX
+    // 🔥 LLAMADA AL BACKEND
     const res = await fetch(`${backendURL}/create-payment`, {
       method: "POST",
       headers: {
@@ -117,7 +118,7 @@ async function go(){
       throw new Error("Respuesta inválida del backend");
     }
 
-    // 🔥 REDIRECCIÓN LIMPIA (SIN TRANSFORMAR NADA)
+    // 🔥 REDIRECCIÓN FINAL (IMPORTANTE)
     const url = new URL("https://fersomaticweb.onrender.com/pago-ok-seleccion");
 
     url.searchParams.set("datos", data.Ds_MerchantParameters);
