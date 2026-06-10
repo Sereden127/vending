@@ -1,7 +1,8 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Vending Ozturk</title>
 
   <style>
@@ -9,35 +10,33 @@
       --bg:#0f1115;
       --card:#171a21;
       --text:#e8eaf0;
-      --green:#1db954;
       --input:#222634;
       --border:#2a2f3a;
+      --green:#1db954;
     }
 
     body{
-      font-family: Arial, sans-serif;
-      padding:16px;
+      margin:0;
+      font-family:Arial;
       background:var(--bg);
       color:var(--text);
-      margin:0;
+      padding:16px;
     }
 
-    .container{ max-width:420px; margin:0 auto; }
+    .container{max-width:420px;margin:auto;}
 
     .box{
       background:var(--card);
       padding:14px;
-      margin-bottom:12px;
       border-radius:14px;
+      margin-bottom:12px;
     }
 
     input{
       width:100%;
       padding:12px;
-      margin-top:6px;
       border-radius:10px;
       border:1px solid var(--border);
-      font-size:16px;
       background:var(--input);
       color:var(--text);
       box-sizing:border-box;
@@ -48,16 +47,10 @@
       padding:16px;
       border:none;
       border-radius:14px;
-      font-size:18px;
-      cursor:pointer;
-      font-weight:bold;
       background:var(--green);
       color:white;
-      margin-bottom:6px;
-    }
-
-    .selected{
-      outline:2px solid white;
+      font-weight:bold;
+      font-size:18px;
     }
   </style>
 </head>
@@ -69,16 +62,11 @@
   <h2>📱 Vending Ozturk</h2>
 
   <div class="box">
-    <button id="btnCafe1" onclick="setMachine(1)">☕ Café 1</button>
-    <button id="btnCafe2" onclick="setMachine(2)">☕ Café 2</button>
+    <input id="seleccion" type="text" placeholder="Ej: 777 o 1003"/>
   </div>
 
   <div class="box">
-    <input id="seleccion" type="text" placeholder="Ej: 777 o 1003" />
-  </div>
-
-  <div class="box">
-    <input id="userEmail" placeholder="Email" />
+    <input id="userEmail" type="text" placeholder="Email"/>
   </div>
 
   <button onclick="go()">PEDIR</button>
@@ -87,58 +75,43 @@
 
 <script>
 
-let machine = 1;
+const backendURL = "https://vending-backend-sjq8.onrender.com";
 
-function setMachine(n){
-  machine = n;
-
-  document.getElementById("btnCafe1").classList.remove("selected");
-  document.getElementById("btnCafe2").classList.remove("selected");
-
-  document.getElementById("btnCafe"+n).classList.add("selected");
-}
-
-// 🔥 GENERADOR DE ORDER ID (FRONTEND)
-function generateOrderId(){
-  return "ORD-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
-}
-
-// 🔥 FUNCIÓN PRINCIPAL
 async function go(){
 
   const sel = document.getElementById("seleccion").value;
   const email = document.getElementById("userEmail").value;
 
   if (!sel) {
-    alert("Falta selección");
+    alert("Introduce selección");
     return;
   }
 
-  // 👉 ORDER ID AUTOMÁTICO (NO LO VE EL USUARIO)
-  const orderId = generateOrderId();
-
   try {
 
-    const res = await fetch("https://vending-backend-sjq8.onrender.com/create-payment", {
+    const res = await fetch(`${backendURL}/create-payment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        orderId, // 👈 se manda pero no se muestra
         amount: sel.length === 4 ? 50 : 100,
         seleccion: sel,
-        email
+        email: email || ""
       })
     });
 
     if (!res.ok) {
-      throw new Error("Error backend: " + res.status);
+      throw new Error("Backend error " + res.status);
     }
 
     const data = await res.json();
 
-    console.log("BACKEND RESPONSE:", data);
+    console.log("RESPUESTA BACKEND:", data);
+
+    if (!data.Ds_MerchantParameters || !data.Ds_Signature) {
+      throw new Error("Respuesta incompleta del backend");
+    }
 
     const url = new URL("https://fersomaticweb.onrender.com/pago-ok-seleccion");
 
@@ -152,8 +125,6 @@ async function go(){
     alert("Error conectando con backend");
   }
 }
-
-document.getElementById("btnCafe1").classList.add("selected");
 
 </script>
 
