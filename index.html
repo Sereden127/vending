@@ -90,30 +90,26 @@
   </div>
 
   <div class="box">
-    <label>Ds_Order (pedido generado)</label>
+    <label>Ds_Order</label>
     <input id="orderView" type="text" readonly />
   </div>
 
-  <button id="sendBtn" onclick="go()">PEDIR</button>
+  <button onclick="go()" id="sendBtn">PEDIR</button>
 
 </div>
 
 <script>
 
-// ================= BASES =================
-
 const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
 
-const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=...";
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=...";
+const cafeBase = "...";
+const cafeBase2 = "...";
 
 let cafeMachine = 1;
 let isProcessing = false;
-
-// ================= ORDER SYSTEM =================
-
 let orderCounter = 0;
 
+// ================= ORDER =================
 function generateDsOrder(machineId){
   orderCounter++;
 
@@ -126,28 +122,23 @@ function generateDsOrder(machineId){
   return `FER-${machineId}-${time}-${counter}-${rand}`.toUpperCase();
 }
 
-// ================= HELPERS =================
+// ================= ENCODING =================
+function encodeStable(obj){
+  const ordered = Object.keys(obj)
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = obj[key];
+      return acc;
+    }, {});
 
-function decode(b64){
-  try { return JSON.parse(atob(b64)); }
-  catch(e){ return {}; }
+  return btoa(JSON.stringify(ordered));
 }
 
-function encode(obj){
-  return btoa(JSON.stringify(obj));
+function decodeMerchant(b64){
+  return JSON.parse(atob(b64));
 }
 
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  bytes.forEach(b => binary += String.fromCharCode(b));
-  return btoa(binary);
-}
-
-function base64url(input) {
-  return input.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
+// ================= HMAC FIX =================
 async function signHmacSHA256(secret, data) {
   const enc = new TextEncoder();
 
@@ -165,14 +156,19 @@ async function signHmacSHA256(secret, data) {
     enc.encode(data)
   );
 
-  return base64url(arrayBufferToBase64(signature));
+  const bytes = new Uint8Array(signature);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 // ================= UI =================
-
 function setCafe(n){
   cafeMachine = n;
-
   document.getElementById('cafe1Btn').classList.remove('selected');
   document.getElementById('cafe2Btn').classList.remove('selected');
   document.getElementById('cafe' + n + 'Btn').classList.add('selected');
@@ -184,14 +180,10 @@ document.getElementById('seleccion').addEventListener('input', () => {
 });
 
 // ================= MAIN =================
-
 async function go(){
 
   if (isProcessing) return;
   isProcessing = true;
-
-  const btn = document.getElementById("sendBtn");
-  btn.innerText = "PROCESANDO...";
 
   const sel = document.getElementById('seleccion').value;
   const email = document.getElementById('userEmail').value;
@@ -203,40 +195,32 @@ async function go(){
 
   const url = new URL(base);
 
-  const datos = decode(url.searchParams.get("datos"));
-  const merchant = decode(url.searchParams.get("Ds_MerchantParameters")) || {};
+  const datos = decodeMerchant(url.searchParams.get("datos"));
+  const merchant = decodeMerchant(url.searchParams.get("Ds_MerchantParameters"));
 
-  // ================= ORDER GENERATION FIX =================
   const fakeOrder = generateDsOrder(cafeMachine);
 
   document.getElementById("orderView").value = fakeOrder;
 
-  // actualizar datos
   datos.seleccion = sel;
   datos.userEmail = email;
   datos.sugarLevel = sugar;
   datos.numeroPedido = fakeOrder;
 
-  // actualizar merchant
   merchant.Ds_Order = fakeOrder;
 
-  const merchantEncoded = encode(merchant);
+  const merchantEncoded = encodeStable(merchant);
 
   const secretKey = "TU_CLAVE_SECRETA";
 
   const signature = await signHmacSHA256(secretKey, merchantEncoded);
 
-  url.searchParams.set("datos", encode(datos));
+  url.searchParams.set("datos", encodeStable(datos));
   url.searchParams.set("Ds_MerchantParameters", merchantEncoded);
   url.searchParams.set("Ds_Signature", signature);
   url.searchParams.set("Ds_SignatureVersion", "HMAC_SHA256_V1");
 
-  console.log("ORDER:", fakeOrder);
-  console.log("SIGNATURE:", signature);
-
-  setTimeout(() => {
-    window.location.href = url.toString();
-  }, 150);
+  window.location.href = url.toString();
 }
 
 </script>
