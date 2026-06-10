@@ -1,3 +1,98 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vending Ozturk</title>
+
+  <style>
+    :root{
+      --bg:#0f1115;
+      --card:#171a21;
+      --text:#e8eaf0;
+      --muted:#aab0be;
+      --green:#1db954;
+      --input:#222634;
+      --border:#2a2f3a;
+    }
+
+    body{
+      font-family: Arial, sans-serif;
+      padding:16px;
+      background:var(--bg);
+      color:var(--text);
+      margin:0;
+    }
+
+    .container{
+      max-width:420px;
+      margin:0 auto;
+    }
+
+    .box{
+      background:var(--card);
+      padding:14px;
+      margin-bottom:12px;
+      border-radius:14px;
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      margin-top:6px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      font-size:16px;
+      background:var(--input);
+      color:var(--text);
+      box-sizing:border-box;
+    }
+
+    button{
+      width:100%;
+      padding:16px;
+      border:none;
+      border-radius:14px;
+      font-size:18px;
+      cursor:pointer;
+      font-weight:bold;
+      background:var(--green);
+      color:white;
+      margin-top:6px;
+    }
+
+    .selected{
+      outline:2px solid white;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>📱 Vending Ozturk</h2>
+
+  <div class="box">
+    <button id="cafe1Btn" onclick="setCafe(1)">☕ Máquina Café 1</button>
+    <button id="cafe2Btn" onclick="setCafe(2)">☕ Máquina Café 2</button>
+  </div>
+
+  <div class="box">
+    <input id="seleccion" type="text" inputmode="numeric" placeholder="Ej: 777 o 1003" />
+  </div>
+
+  <div class="box">
+    <input id="userEmail" placeholder="Email" />
+  </div>
+
+  <div class="box" id="sugarBox" style="display:none;">
+    <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
+  </div>
+
+  <button onclick="go()">PEDIR</button>
+
+</div>
+
 <script>
 
 // BASES
@@ -5,10 +100,16 @@ const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=ey
 
 const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSODYxNzEyNTM5IiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMSBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgyIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=NnZFRxpyHH-_CrYTKdlFXLs5clQ25Qwt4PJy56fs_bI=";
 
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSOTA0NDU0NTgxIiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMiBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTg0IiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=dHLbPf4IKQ2ejbPREHLOFPBvx8rONgJk3IY1Pib-77I=";
+const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSOTA0NDU0NTgxIiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMiBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTg0IiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcmR1Y3ROYW1lIjoiQ0FGRSBDT04gTEVDSEUgQ0FQIn0=&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=dHLbPf4IKQ2ejbPREHLOFPBvx8rONgJk3IY1Pib-77I=";
 
-function decode(b64){return JSON.parse(atob(b64));}
-function encode(obj){return btoa(JSON.stringify(obj));}
+function decode(b64){
+  try { return JSON.parse(atob(b64)); }
+  catch(e){ return {}; }
+}
+
+function encode(obj){
+  return btoa(JSON.stringify(obj));
+}
 
 let cafeMachine = 1;
 
@@ -30,6 +131,7 @@ function go(){
 
   const sel = document.getElementById('seleccion').value;
   const email = document.getElementById('userEmail').value;
+  const sugar = document.getElementById('sugarLevel')?.value || 0;
 
   let base;
 
@@ -44,25 +146,28 @@ function go(){
   const datos = decode(url.searchParams.get("datos"));
   const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
 
-  // 🔥 NUEVO ORDER SOLO VISUAL (NO REAL)
+  // 🔥 ORDER SOLO VISUAL
   const demoOrder =
     "FER" +
     Date.now().toString().slice(-10) +
-    Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+    Math.floor(Math.random() * 1000).toString().padStart(3,"0");
 
   datos.seleccion = sel;
   datos.productName = "SELECCION " + sel;
   datos.userEmail = email;
 
-  // 👇 AQUÍ LO VES CAMBIAR
   datos.numeroPedido = demoOrder;
+  datos.sugarLevel = sugar;
 
   url.searchParams.set("datos", encode(datos));
   url.searchParams.set("Ds_MerchantParameters", encode(merchant));
 
-  console.log("ORDER GENERADO:", demoOrder); // 👈 para que lo veas también en consola
+  console.log("ORDER:", demoOrder);
 
   window.location.href = url.toString();
 }
 
 </script>
+
+</body>
+</html>
