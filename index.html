@@ -85,12 +85,10 @@
     <input id="userEmail" placeholder="Email" />
   </div>
 
-  <!-- AZÚCAR -->
   <div class="box" id="sugarBox" style="display:none;">
     <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
   </div>
 
-  <!-- DS ORDER -->
   <div class="box">
     <label>Ds_Order (pedido generado)</label>
     <input id="orderView" type="text" readonly />
@@ -102,11 +100,17 @@
 
 <script>
 
-// BASES
+// ================= BASES =================
+
 const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
 
 const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=...";
 const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=...";
+
+let cafeMachine = 1;
+let isProcessing = false;
+
+// ================= HELPERS =================
 
 function decode(b64){
   try { return JSON.parse(atob(b64)); }
@@ -117,11 +121,42 @@ function encode(obj){
   return btoa(JSON.stringify(obj));
 }
 
-let cafeMachine = 1;
-let isProcessing = false;
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
+
+function base64url(input) {
+  return input.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function signHmacSHA256(secret, data) {
+  const enc = new TextEncoder();
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    enc.encode(data)
+  );
+
+  return base64url(arrayBufferToBase64(signature));
+}
+
+// ================= UI =================
 
 function setCafe(n){
   cafeMachine = n;
+
   document.getElementById('cafe1Btn').classList.remove('selected');
   document.getElementById('cafe2Btn').classList.remove('selected');
   document.getElementById('cafe' + n + 'Btn').classList.add('selected');
@@ -132,7 +167,9 @@ document.getElementById('seleccion').addEventListener('input', () => {
   document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
 });
 
-function go(){
+// ================= MAIN =================
+
+async function go(){
 
   if (isProcessing) return;
   isProcessing = true;
@@ -151,27 +188,36 @@ function go(){
   const url = new URL(base);
 
   const datos = decode(url.searchParams.get("datos"));
-  const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
+  const merchant = decode(url.searchParams.get("Ds_MerchantParameters")) || {};
 
   const fakeOrder =
-    "FER" +
-    Math.floor(Math.random() * 1e9)
-      .toString()
-      .padStart(9,"0");
+    "FER" + Math.floor(Math.random() * 1e9).toString().padStart(9,"0");
 
   document.getElementById("orderView").value = fakeOrder;
 
+  // actualizar datos
   datos.seleccion = sel;
   datos.userEmail = email;
   datos.sugarLevel = sugar;
   datos.numeroPedido = fakeOrder;
 
+  // actualizar merchant
   merchant.Ds_Order = fakeOrder;
 
+  const merchantEncoded = encode(merchant);
+
+  // ⚠️ CLAVE REAL DEL TPV
+  const secretKey = "TU_CLAVE_SECRETA";
+
+  const signature = await signHmacSHA256(secretKey, merchantEncoded);
+
   url.searchParams.set("datos", encode(datos));
-  url.searchParams.set("Ds_MerchantParameters", encode(merchant));
+  url.searchParams.set("Ds_MerchantParameters", merchantEncoded);
+  url.searchParams.set("Ds_Signature", signature);
+  url.searchParams.set("Ds_SignatureVersion", "HMAC_SHA256_V1");
 
   console.log("ORDER:", fakeOrder);
+  console.log("SIGNATURE:", signature);
 
   setTimeout(() => {
     window.location.href = url.toString();
