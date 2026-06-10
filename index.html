@@ -1,27 +1,36 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vending Ozturk</title>
+  <title>Vending Ozturk</title>  <style>
+    :root{
+      --bg:#0f1115;
+      --card:#171a21;
+      --text:#e8eaf0;
+      --muted:#aab0be;
+      --green:#1db954;
+      --input:#222634;
+      --border:#2a2f3a;
+    }
 
-  <style>
     body{
-      margin:0;
+      font-family: Arial, sans-serif;
       padding:16px;
-      font-family:Arial;
-      background:#0f1115;
-      color:#e8eaf0;
+      background:var(--bg);
+      color:var(--text);
+      margin:0;
+    }
+
+    .container{
+      max-width:420px;
+      margin:0 auto;
     }
 
     .box{
-      background:#171a21;
+      background:var(--card);
       padding:14px;
       margin-bottom:12px;
       border-radius:14px;
-      max-width:420px;
-      margin-left:auto;
-      margin-right:auto;
     }
 
     input{
@@ -29,10 +38,11 @@
       padding:12px;
       margin-top:6px;
       border-radius:10px;
-      border:1px solid #2a2f3a;
-      background:#222634;
-      color:white;
+      border:1px solid var(--border);
       font-size:16px;
+      background:var(--input);
+      color:var(--text);
+      box-sizing:border-box;
     }
 
     button{
@@ -41,84 +51,69 @@
       border:none;
       border-radius:14px;
       font-size:18px;
-      font-weight:bold;
-      background:#1db954;
-      color:white;
       cursor:pointer;
+      font-weight:bold;
+      background:var(--green);
+      color:white;
     }
+  </style></head>
+<body><div class="container"><h2>📱 Vending Ozturk</h2><div class="box">
+  <input id="seleccion" type="text" inputmode="numeric" placeholder="Ej: 777 o 1003" />
+</div><div class="box">
+  <input id="userEmail" placeholder="Email" />
+</div><div class="box" id="sugarBox" style="display:none;">
+  <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
+</div><button onclick="go()">PEDIR</button>
 
-    #sugarBox{ display:none; }
-  </style>
-</head>
+</div><script>
 
-<body>
+// ENLACE BASE SNACK (FIJO)
+const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_MerchantParameters=eyJEc19EYXRlIjoiMTclMkYwNCUyRjIwMjYiLCJEc19Ib3VyIjoiMTUlM0E0OCIsIkRzX1NlY3VyZVBheW1lbnQiOiIxIiwiRHNfQW1vdW50IjoiMTAwIiwiRHNfQ3VycmVuY3kiOiI5NzgiLCJEc19PcmRlciI6IkZFUjQzMzY4MzI5NCIsIkRzX01lcmNoYW50Q29kZSI6IjM2NzQ0NTA3OSIsIkRzX1Rlcm1pbmFsIjoiMDAxIiwiRHNfUmVzcG9uc2UiOiIwMDAwIiwiRHNfVHJhbnNhY3Rpb25UeXBlIjoiMCIsIkRzX01lcmNoYW50RGF0YSI6IiIsIkRzX0F1dGhvcmlzYXRpb25Db2RlIjoiVUlLRE5RIiwiRHNfQ29uc3VtZXJMYW5ndWFnZSI6IjEiLCJEc19DYXJkX0NvdW50cnkiOiI3MjQiLCJEc19DYXJkX1R5cG9sb2d5IjoiQ09OU1VNTyIsIkRzX0NhcmRfVHlwZSI6IkQiLCJEc19DYXJkX0JyYW5kIjoiMiIsIkRzX1Byb2Nlc3NlZFBheU1ldGhvZCI6IjgxIn0=&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
 
-<div class="box">
-  <h2>Vending Ozturk</h2>
+// ENLACE BASE CAFÉ (FIJO)
+const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSODYxNzEyNTM5IiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMSBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgyIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_MerchantParameters=eyJEc19EYXRlIjoiMzAlMkYwMyUyRjIwMjYiLCJEc19Ib3VyIjoiMTElM0EwOCIsIkRzX1NlY3VyZVBheW1lbnQiOiIxIiwiRHNfQW1vdW50IjoiNTAiLCJEc19DdXJyZW5jeSI6Ijk3OCIsIkRzX09yZGVyIjoiRkVSODYxNzEyNTM5IiwiRHNfTWVyY2hhbnRDb2RlIjoiMzY3NDQ1MDc5IiwiRHNfVGVybWluYWwiOiIwMDEiLCJEc19SZXNwb25zZSI6IjAwMDAiLCJEc19UcmFuc2FjdGlvblR5cGUiOiIwIiwiRHNfTWVyY2hhbnREYXRhIjoiIiwiRHNfQXV0aG9yaXNhdGlvbkNvZGUiOiI3MjY0MTMiLCJEc19Db25zdW1lckxhbmd1YWdlIjoiMSIsIkRzX0NhcmRfQ291bnRyeSI6IjcyNCIsIkRzX0NhcmRfVHlwb2xvZ3kiOiJDT05TVU1PIiwiRHNfQ2FyZF9UeXBlIjoiRCIsIkRzX0NhcmRfQnJhbmQiOiIyIiwiRHNfUHJvY2Vzc2VkUGF5TWV0aG9kIjoiNzEifQ==&Ds_Signature=NnZFRxpyHH-_CrYTKdlFXLs5clQ25Qwt4PJy56fs_bI=";
 
-  <button onclick="setMachine(1)">Máquina 1</button>
-  <button onclick="setMachine(2)">Máquina 2</button>
-</div>
+function decode(b64){return JSON.parse(atob(b64));}
+function encode(obj){return btoa(JSON.stringify(obj));}
 
-<div class="box">
-  <input id="selection" placeholder="Producto (3 o 4 dígitos)" />
-</div>
+// Mostrar/ocultar azúcar solo para café (4 dígitos)
+const selInput = document.getElementById('seleccion');
+const sugarBox = document.getElementById('sugarBox');
 
-<div class="box">
-  <input id="email" placeholder="Email" />
-</div>
-
-<div class="box" id="sugarBox">
-  <input id="sugar" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
-</div>
-
-<div class="box">
-  <button onclick="go()">PEDIR</button>
-</div>
-
-<script>
-
-// ================= ENLACES ORIGINALES =================
-const links = {
-  1: "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=LINK_M1",
-  2: "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=LINK_M2"
-};
-
-let machine = 1;
-
-// ================= UI =================
-function setMachine(n){
-  machine = n;
-}
-
-document.getElementById("selection").addEventListener("input", (e) => {
-  document.getElementById("sugarBox").style.display =
-    e.target.value.length === 4 ? "block" : "none";
+selInput.addEventListener('input', () => {
+  const v = selInput.value;
+  if(v.length === 4){
+    sugarBox.style.display = 'block';
+  } else {
+    sugarBox.style.display = 'none';
+  }
 });
 
-// ================= MAIN =================
 function go(){
+  const sel = document.getElementById('seleccion').value;
+  const email = document.getElementById('userEmail').value;
 
-  const sel = document.getElementById("selection").value || "";
-  const email = document.getElementById("email").value || "";
-  const sugar = document.getElementById("sugar").value || "";
+  const base = sel.length === 4 ? cafeBase : snackBase;
 
-  let url = links[machine];
+  const url = new URL(base);
 
-  // 🔥 SOLO AÑADIMOS PARÁMETROS EXTERNOS (SIN TOCAR datos)
-  const finalUrl = new URL(url);
+  const datos = decode(url.searchParams.get("datos"));
+  const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
 
-  finalUrl.searchParams.set("seleccion", sel);
-  finalUrl.searchParams.set("userEmail", email);
+  // SOLO modificar esto
+  datos.seleccion = sel;
+  datos.productName = "SELECCION " + sel;
+  datos.userEmail = email;
 
-  if (sel.length === 4) {
-    finalUrl.searchParams.set("sugarLevel", sugar);
-  }
+  merchant.Ds_Order = merchant.Ds_Order; // no tocar
 
-  window.location.href = finalUrl.toString();
+  url.searchParams.set("datos", encode(datos));
+  url.searchParams.set("Ds_MerchantParameters", encode(merchant));
+
+  // firma intacta
+
+  window.location.href = url.toString();
 }
 
-</script>
-
-</body>
+</script></body>
 </html>
