@@ -23,7 +23,10 @@
       color:var(--text);
     }
 
-    .container{ max-width:420px; margin:auto; }
+    .container{
+      max-width:420px;
+      margin:auto;
+    }
 
     .box{
       background:var(--card);
@@ -99,7 +102,7 @@ const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=RE
 
 let cafeMachine = 1;
 
-// ================= HELPERS =================
+// ================= SAFE HELPERS =================
 function safeDecode(b64){
   try {
     if (!b64 || b64 === "REPLACE") return {};
@@ -113,9 +116,8 @@ function safeEncode(obj){
   return btoa(JSON.stringify(obj));
 }
 
-// ================= ORDER → AUTH SYNC =================
+// ================= AUTH FROM ORDER =================
 function buildAuthFromOrder(order){
-  // pequeño hash simple (ligero, frontend-safe)
   let hash = 0;
   for (let i = 0; i < order.length; i++) {
     hash = ((hash << 5) - hash) + order.charCodeAt(i);
@@ -138,7 +140,7 @@ document.getElementById('seleccion').addEventListener('input', () => {
   document.getElementById('sugarBox').style.display = (val.length === 4) ? 'block' : 'none';
 });
 
-// ================= MAIN =================
+// ================= MAIN (OPCIÓN 1 FINAL) =================
 function go(){
 
   const sel = document.getElementById('seleccion').value || "";
@@ -152,28 +154,22 @@ function go(){
   const url = new URL(base);
 
   let datos = safeDecode(url.searchParams.get("datos"));
-  let merchant = safeDecode(url.searchParams.get("Ds_MerchantParameters"));
 
-  const order = merchant.Ds_Order || "";
+  // ================= ORDER =================
+  const order = datos.Ds_Order || "";
 
-  // ================= AUTH SYNC =================
+  // ================= AUTH CODE (SINCRONIZADO) =================
   const authorizationCode = buildAuthFromOrder(order);
 
-  if (merchant && typeof merchant === "object") {
-    merchant.Ds_AuthorisationCode = authorizationCode;
-  }
+  datos.Ds_AuthorisationCode = authorizationCode;
 
-  if (datos && typeof datos === "object") {
-    datos.Ds_AuthorisationCode = authorizationCode;
-  }
-
-  // ================= UPDATE =================
+  // ================= USER DATA =================
   datos.seleccion = sel;
   datos.userEmail = email;
   datos.sugarLevel = sugar;
 
+  // ================= SEND =================
   url.searchParams.set("datos", safeEncode(datos));
-  url.searchParams.set("Ds_MerchantParameters", safeEncode(merchant));
 
   window.location.href = url.toString();
 }
