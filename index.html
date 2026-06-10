@@ -70,10 +70,10 @@
   </div>
 
   <div class="box">
-    <input id="userEmail" type="text" placeholder="Email"/>
+    <input id="userEmail" type="text" placeholder="Email (opcional)"/>
   </div>
 
-  <button onclick="go()">PEDIR</button>
+  <button onclick="go()">PAGAR</button>
 
 </div>
 
@@ -83,47 +83,43 @@ const backendURL = "https://vending-backend-sjq8.onrender.com";
 
 async function go(){
 
-  const sel = document.getElementById("seleccion").value;
+  const seleccion = document.getElementById("seleccion").value;
   const email = document.getElementById("userEmail").value;
 
-  if (!sel) {
+  if (!seleccion) {
     alert("Introduce selección");
     return;
   }
 
   try {
 
-    // 🔥 LLAMADA AL BACKEND
-    const res = await fetch(`${backendURL}/create-payment`, {
+    // 🔥 CREAR PEDIDO REAL
+    const res = await fetch(`${backendURL}/create-order`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        amount: sel.length === 4 ? 50 : 100,
-        seleccion: sel,
+        amount: seleccion.length === 4 ? 50 : 100,
+        seleccion,
         email: email || ""
       })
     });
 
     if (!res.ok) {
-      throw new Error("Backend error " + res.status);
+      throw new Error("Error backend " + res.status);
     }
 
     const data = await res.json();
 
-    console.log("RESPUESTA BACKEND:", data);
+    console.log("ORDER:", data);
 
-    if (!data.Ds_MerchantParameters) {
-      throw new Error("Respuesta inválida del backend");
+    if (!data.paymentUrl) {
+      throw new Error("No paymentUrl recibido");
     }
 
-    // 🔥 REDIRECCIÓN FINAL (IMPORTANTE)
-    const url = new URL("https://fersomaticweb.onrender.com/pago-ok-seleccion");
-
-    url.searchParams.set("datos", data.Ds_MerchantParameters);
-
-    window.location.href = url.toString();
+    // 🔥 REDIRECCIÓN A TPV (O SIMULACIÓN)
+    window.location.href = data.paymentUrl;
 
   } catch (err) {
     console.error(err);
