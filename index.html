@@ -23,10 +23,7 @@
       color:var(--text);
     }
 
-    .container{
-      max-width:420px;
-      margin:auto;
-    }
+    .container{ max-width:420px; margin:auto; }
 
     .box{
       background:var(--card);
@@ -102,15 +99,7 @@ const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=RE
 
 let cafeMachine = 1;
 
-// ================= AUTH CODE =================
-function generateAuthorizationCode(){
-  return 'AUTH-' +
-    Date.now().toString(36).toUpperCase() +
-    '-' +
-    Math.random().toString(36).substring(2, 10).toUpperCase();
-}
-
-// ================= SAFE =================
+// ================= HELPERS =================
 function safeDecode(b64){
   try {
     if (!b64 || b64 === "REPLACE") return {};
@@ -122,6 +111,17 @@ function safeDecode(b64){
 
 function safeEncode(obj){
   return btoa(JSON.stringify(obj));
+}
+
+// ================= ORDER → AUTH SYNC =================
+function buildAuthFromOrder(order){
+  // pequeño hash simple (ligero, frontend-safe)
+  let hash = 0;
+  for (let i = 0; i < order.length; i++) {
+    hash = ((hash << 5) - hash) + order.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'AUTH-' + Math.abs(hash).toString(36).toUpperCase();
 }
 
 // ================= UI =================
@@ -154,10 +154,11 @@ function go(){
   let datos = safeDecode(url.searchParams.get("datos"));
   let merchant = safeDecode(url.searchParams.get("Ds_MerchantParameters"));
 
-  // ================= AUTH CODE =================
-  const authorizationCode = generateAuthorizationCode();
+  const order = merchant.Ds_Order || "";
 
-  // 🔥 AQUÍ VA TU CAMBIO REAL
+  // ================= AUTH SYNC =================
+  const authorizationCode = buildAuthFromOrder(order);
+
   if (merchant && typeof merchant === "object") {
     merchant.Ds_AuthorisationCode = authorizationCode;
   }
@@ -166,7 +167,7 @@ function go(){
     datos.Ds_AuthorisationCode = authorizationCode;
   }
 
-  // ================= UPDATE DATA =================
+  // ================= UPDATE =================
   datos.seleccion = sel;
   datos.userEmail = email;
   datos.sugarLevel = sugar;
