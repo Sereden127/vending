@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -35,7 +36,7 @@
       border-radius:14px;
     }
 
-    input{
+    input, textarea{
       width:100%;
       padding:12px;
       margin-top:6px;
@@ -62,6 +63,14 @@
 
     .selected{
       outline:2px solid white;
+    }
+
+    pre{
+      background:#0b0d12;
+      padding:10px;
+      border-radius:10px;
+      overflow:auto;
+      font-size:12px;
     }
   </style>
 </head>
@@ -90,6 +99,21 @@
   </div>
 
   <button onclick="go()">PEDIR</button>
+
+  <!-- DEBUG PANEL -->
+  <div class="box">
+    <h3>🧪 DEBUG TPV</h3>
+
+    <label>Ds_MerchantParameters</label>
+    <textarea id="debugMerchant"></textarea>
+
+    <label>Ds_Signature</label>
+    <input id="debugSignature" />
+
+    <button onclick="decodeDebug()">DECODIFICAR</button>
+
+    <pre id="debugOutput"></pre>
+  </div>
 
 </div>
 
@@ -127,57 +151,69 @@ selInput.addEventListener('input', () => {
   sugarBox.style.display = (selInput.value.length === 4) ? 'block' : 'none';
 });
 
-function go(){
+function loadDebugFromUrl(url){
+  document.getElementById("debugMerchant").value =
+    url.searchParams.get("Ds_MerchantParameters") || "";
 
+  document.getElementById("debugSignature").value =
+    url.searchParams.get("Ds_Signature") || "";
+}
+
+function decodeDebug(){
   try {
+    const mp = document.getElementById("debugMerchant").value;
+    const sig = document.getElementById("debugSignature").value;
 
-    const sel = document.getElementById('seleccion').value;
-    const email = document.getElementById('userEmail').value;
-    const sugar = document.getElementById('sugarLevel')?.value || 0;
+    let decoded = {};
 
-    let base;
-
-    if(sel.length === 4){
-      base = (cafeMachine === 1) ? cafeBase : cafeBase2;
-    } else {
-      base = snackBase;
+    try {
+      decoded = JSON.parse(atob(mp));
+    } catch(e){
+      decoded = { error: "No se pudo decodificar" };
     }
 
-    const url = new URL(base);
-
-    const datos = decode(url.searchParams.get("datos"));
-    const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
-
-    // 🔥 ORDER ALEATORIO
-    const fakeOrder =
-      "FER" +
-      Date.now().toString().slice(-10) +
-      Math.floor(Math.random() * 1000).toString().padStart(3,"0");
-
-    // datos normales
-    datos.seleccion = sel;
-    datos.productName = "SELECCION " + sel;
-    datos.userEmail = email;
-    datos.sugarLevel = sugar;
-
-    // visual interno
-    datos.numeroPedido = fakeOrder;
-
-    // 💥 AQUÍ SE ROMPE LA FIRMA A PROPÓSITO
-    merchant.Ds_Order = fakeOrder;
-
-    url.searchParams.set("datos", encode(datos));
-    url.searchParams.set("Ds_MerchantParameters", encode(merchant));
-
-    console.log("ORDER MODIFICADO:", fakeOrder);
-    console.log("⚠️ ESPERADO: error de firma");
-
-    window.location.href = url.toString();
+    document.getElementById("debugOutput").textContent =
+      "SIGNATURE:\n" + sig + "\n\n" +
+      "MERCHANT:\n" + JSON.stringify(decoded, null, 2);
 
   } catch (e) {
-    console.error(e);
-    alert("Error interno en generación de pedido");
+    document.getElementById("debugOutput").textContent = e.message;
   }
+}
+
+function go(){
+
+  const sel = document.getElementById('seleccion').value;
+  const email = document.getElementById('userEmail').value;
+  const sugar = document.getElementById('sugarLevel')?.value || 0;
+
+  let base = (sel.length === 4)
+    ? (cafeMachine === 1 ? cafeBase : cafeBase2)
+    : snackBase;
+
+  const url = new URL(base);
+
+  const datos = decode(url.searchParams.get("datos"));
+  const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
+
+  const fakeOrder =
+    "FER" + Date.now().toString().slice(-10);
+
+  datos.seleccion = sel;
+  datos.userEmail = email;
+  datos.sugarLevel = sugar;
+  datos.numeroPedido = fakeOrder;
+
+  merchant.Ds_Order = fakeOrder;
+
+  url.searchParams.set("datos", encode(datos));
+  url.searchParams.set("Ds_MerchantParameters", encode(merchant));
+
+  loadDebugFromUrl(url);
+
+  console.log("URL FINAL:", url.toString());
+
+  // window.location.href = url.toString();
 }
 
 </script>
