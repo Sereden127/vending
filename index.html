@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vending</title>
+  <title>Selector Vending</title>
 
   <style>
     body{
@@ -21,7 +21,7 @@
       margin-bottom:12px;
     }
 
-    input, select{
+    select, input{
       width:100%;
       padding:12px;
       margin-top:8px;
@@ -45,8 +45,14 @@
     }
 
     .title{
-      font-size:20px;
+      font-size:18px;
       margin-bottom:10px;
+    }
+
+    .hint{
+      font-size:12px;
+      opacity:0.7;
+      margin-top:6px;
     }
   </style>
 </head>
@@ -54,84 +60,63 @@
 <body>
 
 <div class="box">
-  <div class="title">🟢 Selección de vending</div>
+  <div class="title">🟢 Selector de producto</div>
 
-  <!-- MAQUINA -->
   <label>Máquina</label>
-  <select id="maquina">
-    <option value="M1">Máquina M1</option>
-    <option value="M2">Máquina M2</option>
-    <option value="M3">Máquina M3</option>
+  <select id="machineId">
+    <option value="18983">V8 OZTURK QUEBABA</option>
   </select>
 
-  <!-- PRODUCTO -->
   <label>Producto</label>
-  <input id="producto" type="text" placeholder="Ej: Snack A / Café / Agua"/>
+  <input id="product" type="text" placeholder="Ej: Snack 138 / Café / Agua"/>
 
-  <!-- IMPORTE -->
-  <label>Importe (pruebas: 0 o 0.01)</label>
-  <input id="importe" type="number" value="0" step="0.01"/>
+  <label>Importe (€)</label>
+  <input id="price" type="number" value="0" step="0.01"/>
 
-  <!-- EMAIL OPCIONAL -->
-  <label>Email (opcional)</label>
-  <input id="email" type="text" placeholder="correo@ejemplo.com"/>
+  <label>Email</label>
+  <input id="email" type="text" placeholder="usuario@email.com"/>
+
+  <div class="hint">
+    ⚠ El pago real lo gestiona Fersomatic + TPV (Redsys). Aquí solo seleccionas.
+  </div>
 
   <br><br>
 
-  <button onclick="crearPedido()">CREAR PEDIDO</button>
+  <button onclick="sendToTaos()">CONTINUAR A PAGO</button>
 </div>
 
 <script>
 
-const BACKEND = "https://vending-backend-sjq8.onrender.com";
+function sendToTaos(){
 
-async function crearPedido(){
-
-  const maquina = document.getElementById("maquina").value;
-  const producto = document.getElementById("producto").value;
-  const importe = document.getElementById("importe").value;
+  const machineId = document.getElementById("machineId").value;
+  const product = document.getElementById("product").value;
+  const price = document.getElementById("price").value;
   const email = document.getElementById("email").value;
 
-  if (!producto) {
+  if (!product) {
     alert("Introduce un producto");
     return;
   }
 
-  try {
+  // 🔥 ESTO ES LO IMPORTANTE:
+  // Construimos URL compatible con TAOS / Fersomatic
+  const params = new URLSearchParams({
+    machineId,
+    product,
+    price,
+    userEmail: email,
+    zona: "snackseleccion",
+    clientId: "Pica24h"
+  });
 
-    const res = await fetch(`${BACKEND}/create-order`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        maquina,
-        producto,
-        importe: Number(importe),
-        email
-      })
-    });
+  const taosUrl =
+    "https://fersomaticweb.onrender.com/zonas/TAOS.html?" + params.toString();
 
-    if (!res.ok) {
-      throw new Error("Error backend");
-    }
+  console.log("REDIRIGIENDO A TAOS:", taosUrl);
 
-    const data = await res.json();
-
-    console.log("PEDIDO CREADO:", data);
-
-    alert("Pedido creado: " + data.orderId);
-
-    // 🔥 AQUÍ EN UN SISTEMA REAL:
-    // Fersomatic devolvería URL de pago del TPV
-    // y aquí redirigirías al pago
-
-    // window.location.href = data.paymentUrl;
-
-  } catch (err) {
-    console.error(err);
-    alert("Error conectando con backend");
-  }
+  // 🔥 AQUÍ ENTRAS EN EL SISTEMA REAL DE FERSOMATIC
+  window.location.href = taosUrl;
 }
 
 </script>
