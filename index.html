@@ -110,6 +110,22 @@ const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=..
 let cafeMachine = 1;
 let isProcessing = false;
 
+// ================= ORDER SYSTEM =================
+
+let orderCounter = 0;
+
+function generateDsOrder(machineId){
+  orderCounter++;
+
+  const time = Date.now().toString(36).toUpperCase();
+  const counter = orderCounter.toString(36).toUpperCase();
+
+  const rand = crypto.getRandomValues(new Uint8Array(2))
+    .reduce((a,b)=> a + b.toString(16).padStart(2,'0'), '');
+
+  return `FER-${machineId}-${time}-${counter}-${rand}`.toUpperCase();
+}
+
 // ================= HELPERS =================
 
 function decode(b64){
@@ -190,8 +206,8 @@ async function go(){
   const datos = decode(url.searchParams.get("datos"));
   const merchant = decode(url.searchParams.get("Ds_MerchantParameters")) || {};
 
-  const fakeOrder =
-    "FER" + Math.floor(Math.random() * 1e9).toString().padStart(9,"0");
+  // ================= ORDER GENERATION FIX =================
+  const fakeOrder = generateDsOrder(cafeMachine);
 
   document.getElementById("orderView").value = fakeOrder;
 
@@ -206,7 +222,6 @@ async function go(){
 
   const merchantEncoded = encode(merchant);
 
-  // ⚠️ CLAVE REAL DEL TPV
   const secretKey = "TU_CLAVE_SECRETA";
 
   const signature = await signHmacSHA256(secretKey, merchantEncoded);
