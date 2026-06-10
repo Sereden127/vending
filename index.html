@@ -5,7 +5,7 @@
   <title>Vending Ozturk</title>
 
   <style>
-   :root{
+    :root{
       --bg:#0f1115;
       --card:#171a21;
       --text:#e8eaf0;
@@ -75,10 +75,6 @@
   </div>
 
   <div class="box">
-    <input id="orderId" type="text" placeholder="ID Order" />
-  </div>
-
-  <div class="box">
     <input id="seleccion" type="text" placeholder="Ej: 777 o 1003" />
   </div>
 
@@ -103,14 +99,14 @@ function setMachine(n){
   document.getElementById("btnCafe"+n).classList.add("selected");
 }
 
+// 🔥 FUNCIÓN PRINCIPAL (YA SIN ORDER ID)
 async function go(){
 
-  const orderId = document.getElementById("orderId").value;
   const sel = document.getElementById("seleccion").value;
   const email = document.getElementById("userEmail").value;
 
-  if (!orderId) {
-    alert("Falta Order ID");
+  if (!sel) {
+    alert("Falta selección");
     return;
   }
 
@@ -122,7 +118,6 @@ async function go(){
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        orderId,
         amount: sel.length === 4 ? 50 : 100,
         seleccion: sel,
         email
@@ -135,8 +130,9 @@ async function go(){
 
     const data = await res.json();
 
-    console.log("BACKEND RESPONSE:", data);
+    console.log("RESPUESTA BACKEND:", data);
 
+    // 🔥 REDIRECCIÓN FINAL A TPV
     const url = new URL("https://fersomaticweb.onrender.com/pago-ok-seleccion");
 
     url.searchParams.set("Ds_MerchantParameters", data.Ds_MerchantParameters);
