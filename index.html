@@ -1,163 +1,77 @@
-<!DOCTYPE html><html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vending Ozturk</title>
+import express from "express";
+import crypto from "crypto";
 
-  <style>
-    :root{
-      --bg:#0f1115;
-      --card:#171a21;
-      --text:#e8eaf0;
-      --muted:#aab0be;
-      --green:#1db954;
-      --input:#222634;
-      --border:#2a2f3a;
-    }
+const app = express();
+app.use(express.json());
 
-    body{
-      font-family: Arial, sans-serif;
-      padding:16px;
-      background:var(--bg);
-      color:var(--text);
-      margin:0;
-    }
+// 🔐 CONFIGURACIÓN (rellena con tus datos reales)
+const SECRET_KEY = "TU_CLAVE_SECRETA_BASE64";
+const MERCHANT_CODE = "367445079";
+const TERMINAL = "001";
+const CURRENCY = "978";
+const URL_BASE = "https://fersomaticweb.onrender.com/pago-ok-seleccion";
 
-    .container{
-      max-width:420px;
-      margin:0 auto;
-    }
-
-    .box{
-      background:var(--card);
-      padding:14px;
-      margin-bottom:12px;
-      border-radius:14px;
-    }
-
-    input{
-      width:100%;
-      padding:12px;
-      margin-top:6px;
-      border-radius:10px;
-      border:1px solid var(--border);
-      font-size:16px;
-      background:var(--input);
-      color:var(--text);
-      box-sizing:border-box;
-    }
-
-    button{
-      width:100%;
-      padding:16px;
-      border:none;
-      border-radius:14px;
-      font-size:18px;
-      cursor:pointer;
-      font-weight:bold;
-      background:var(--green);
-      color:white;
-      margin-top:6px;
-    }
-
-    .selected{
-      outline:2px solid white;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="container">
-
-  <h2>📱 Vending Ozturk</h2>
-
-  <!-- SELECTOR MÁQUINA CAFÉ -->
-  <div class="box">
-    <button id="cafe1Btn" onclick="setCafe(1)">☕ Máquina Café 1</button>
-    <button id="cafe2Btn" onclick="setCafe(2)">☕ Máquina Café 2</button>
-  </div>
-
-  <!-- PRODUCTO -->
-  <div class="box">
-    <input id="seleccion" type="text" inputmode="numeric" placeholder="Ej: 777 o 1003" />
-  </div>
-
-  <!-- EMAIL -->
-  <div class="box">
-    <input id="userEmail" placeholder="Email" />
-  </div>
-
-  <!-- AZÚCAR -->
-  <div class="box" id="sugarBox" style="display:none;">
-    <input id="sugarLevel" type="number" min="0" max="3" placeholder="Azúcar (0-3)" />
-  </div>
-
-  <button onclick="go()">PEDIR</button>
-
-</div>
-
-<script>
-
-// BASES
-const snackBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSNDMzNjgzMjk0IiwiaW1wb3J0ZUNlbnRzIjoiMTAwIiwic2VsZWNjaW9uIjoiMTE3IiwibWFjaGluZU5hbWUiOiJWOCBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgzIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJzbmFja3NlbGVjY2lvbiIsInVzZXJFbWFpbCI6IiIsImNsaWVudElkIjoiUGljYTI0aCIsInByb2R1Y3ROYW1lIjoiU0VMRUNDSU9OIDExNyJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_MerchantParameters=eyJEc19EYXRlIjoiMTclMkYwNCUyRjIwMjYiLCJEc19Ib3VyIjoiMTUlM0E0OCIsIkRzX1NlY3VyZVBheW1lbnQiOiIxIiwiRHNfQW1vdW50IjoiMTAwIiwiRHNfQ3VycmVuY3kiOiI5NzgiLCJEc19PcmRlciI6IkZFUjQzMzY4MzI5NCIsIkRzX01lcmNoYW50Q29kZSI6IjM2NzQ0NTA3OSIsIkRzX1Rlcm1pbmFsIjoiMDAxIiwiRHNfUmVzcG9uc2UiOiIwMDAwIiwiRHNfVHJhbnNhY3Rpb25UeXBlIjoiMCIsIkRzX01lcmNoYW50RGF0YSI6IiIsIkRzX0F1dGhvcmlzYXRpb25Db2RlIjoiVUlLRE5RIiwiRHNfQ29uc3VtZXJMYW5ndWFnZSI6IjEiLCJEc19DYXJkX0NvdW50cnkiOiI3MjQiLCJEc19DYXJkX1R5cG9sb2d5IjoiQ09OU1VNTyIsIkRzX0NhcmRfVHlwZSI6IkQiLCJEc19DYXJkX0JyYW5kIjoiMiIsIkRzX1Byb2Nlc3NlZFBheU1ldGhvZCI6IjgxIn0=&Ds_Signature=s1g8KcApEXkXb8TD_cKqw11NQJtnpUkhbkggV317qh0=";
-
-const cafeBase = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSODYxNzEyNTM5IiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMSBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTgyIiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_MerchantParameters=eyJEc19EYXRlIjoiMzAlMkYwMyUyRjIwMjYiLCJEc19Ib3VyIjoiMTElM0EwOCIsIkRzX1NlY3VyZVBheW1lbnQiOiIxIiwiRHNfQW1vdW50IjoiNTAiLCJEc19DdXJyZW5jeSI6Ijk3OCIsIkRzX09yZGVyIjoiRkVSODYxNzEyNTM5IiwiRHNfTWVyY2hhbnRDb2RlIjoiMzY3NDQ1MDc5IiwiRHNfVGVybWluYWwiOiIwMDEiLCJEc19SZXNwb25zZSI6IjAwMDAiLCJEc19UcmFuc2FjdGlvblR5cGUiOiIwIiwiRHNfTWVyY2hhbnREYXRhIjoiIiwiRHNfQXV0aG9yaXNhdGlvbkNvZGUiOiI3MjY0MTMiLCJEc19Db25zdW1lckxhbmd1YWdlIjoiMSIsIkRzX0NhcmRfQ291bnRyeSI6IjcyNCIsIkRzX0NhcmRfVHlwb2xvZ3kiOiJDT05TVU1PIiwiRHNfQ2FyZF9UeXBlIjoiRCIsIkRzX0NhcmRfQnJhbmQiOiIyIiwiRHNfUHJvY2Vzc2VkUGF5TWV0aG9kIjoiNzEifQ==&Ds_Signature=NnZFRxpyHH-_CrYTKdlFXLs5clQ25Qwt4PJy56fs_bI=";
-
-// MÁQUINA CAFÉ 2
-const cafeBase2 = "https://fersomaticweb.onrender.com/pago-ok-seleccion?datos=eyJjbGF2ZUJhc2U2NCI6Ikx3OVBQbTNBa3dYUEkwYWVhYnJQbHpaS1M1MXRTZElaIiwiZnVjIjoiMzY3NDQ1MDc5IiwibnVtZXJvUGVkaWRvIjoiRkVSOTA0NDU0NTgxIiwiaW1wb3J0ZUNlbnRzIjoiNTAiLCJzZWxlY2Npb24iOiIxMDAzIiwibWFjaGluZU5hbWUiOiJHLTU0NiBDQVAgMiBPWlRVUksgUVVFQkFCQSIsIm1hY2hpbmVJZCI6IjE4OTg0IiwidGlwbyI6InNlbGVjY2lvbiIsInpvbmEiOiJjYWZlY2FwIiwidXNlckVtYWlsIjoiIiwic3VnYXJMZXZlbCI6IjAiLCJjbGllbnRJZCI6IlBpY2EyNGgiLCJwcm9kdWN0TmFtZSI6IkNBRkUgQ09OIExFQ0hFIENBUCJ9&Ds_SignatureVersion=HMAC_SHA256_V1&Ds_Signature=dHLbPf4IKQ2ejbPREHLOFPBvx8rONgJk3IY1Pib-77I=";
-
-function decode(b64){return JSON.parse(atob(b64));}
-function encode(obj){return btoa(JSON.stringify(obj));}
-
-// MÁQUINA
-let cafeMachine = 1;
-
-function setCafe(n){
-  cafeMachine = n;
-  document.getElementById('cafe1Btn').classList.remove('selected');
-  document.getElementById('cafe2Btn').classList.remove('selected');
-  document.getElementById('cafe' + n + 'Btn').classList.add('selected');
+// 🧠 generar order único
+function generateOrder() {
+  return "FER" + Date.now().toString().slice(-10);
 }
 
-// AZÚCAR
-const selInput = document.getElementById('seleccion');
-const sugarBox = document.getElementById('sugarBox');
+// 🔐 firma HMAC SHA256 (Redsys style)
+function sign(data, key) {
+  const keyDecoded = Buffer.from(key, "base64");
+  return crypto
+    .createHmac("sha256", keyDecoded)
+    .update(data)
+    .digest("base64");
+}
 
-selInput.addEventListener('input', () => {
-  sugarBox.style.display = (selInput.value.length === 4) ? 'block' : 'none';
+app.post("/api/crear-pedido", (req, res) => {
+
+  const { seleccion, email, sugarLevel, machine } = req.body;
+
+  const order = generateOrder();
+
+  const importe = (machine === "snack") ? "100" : "50";
+
+  // 📦 merchant params
+  const merchantParams = {
+    Ds_Merchant_Amount: importe,
+    Ds_Merchant_Currency: CURRENCY,
+    Ds_Merchant_Order: order,
+    Ds_Merchant_MerchantCode: MERCHANT_CODE,
+    Ds_Merchant_Terminal: TERMINAL,
+    Ds_Merchant_TransactionType: "0",
+    Ds_Merchant_MerchantData: "",
+    Ds_Merchant_UrlOK: "",
+    Ds_Merchant_UrlKO: "",
+    Ds_Merchant_Product: seleccion,
+    Ds_Merchant_ConsumerLanguage: "1"
+  };
+
+  const merchantBase64 = Buffer.from(JSON.stringify(merchantParams)).toString("base64");
+
+  const signature = sign(merchantBase64, SECRET_KEY);
+
+  // 📦 datos extra tuyos
+  const datos = {
+    seleccion,
+    userEmail: email,
+    sugarLevel: sugarLevel || 0,
+    numeroPedido: order,
+    machine
+  };
+
+  const datosBase64 = Buffer.from(JSON.stringify(datos)).toString("base64");
+
+  const url =
+    `${URL_BASE}?datos=${datosBase64}` +
+    `&Ds_MerchantParameters=${merchantBase64}` +
+    `&Ds_SignatureVersion=HMAC_SHA256_V1` +
+    `&Ds_Signature=${encodeURIComponent(signature)}`;
+
+  res.json({ url });
 });
 
-// GO
-function go(){
-
-  const sel = document.getElementById('seleccion').value;
-  const email = document.getElementById('userEmail').value;
-
-  let base;
-
-  if(sel.length === 4){
-    base = (cafeMachine === 1) ? cafeBase : cafeBase2;
-  } else {
-    base = snackBase;
-  }
-
-  const url = new URL(base);
-
-  const datos = decode(url.searchParams.get("datos"));
-  const merchant = decode(url.searchParams.get("Ds_MerchantParameters"));
-
-  datos.seleccion = sel;
-  datos.productName = "SELECCION " + sel;
-  datos.userEmail = email;
-
-  url.searchParams.set("datos", encode(datos));
-  url.searchParams.set("Ds_MerchantParameters", encode(merchant));
-
-  window.location.href = url.toString();
-}
-
-</script>
-
-</body>
-</html>
+app.listen(3000, () => {
+  console.log("Servidor vending activo en puerto 3000");
+});
